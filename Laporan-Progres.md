@@ -11,9 +11,7 @@
 ![alt text](image.png)
 3. PM membuat inisialisasi proyek
 4. Konfirmasi Bukti
-![alt text](Screenrecorder-2026-10-11-21-41-42-642.gif)
-
-Tugas Member:
+<img src="Screenrecorder-2026-10-11-21-41-42-642.gif" width="25%">
 
 Dimas :
 1.
@@ -42,10 +40,6 @@ Hari/Tanggal    : Minggu, 11 OKtober 2026
 Tempat/Media    : Google meet
 
 ## Agenda Diskusi ##
-1.	Mengusulkan ide tema aplikasi mobile
-2.	Menentukan target pengguna aplikasi
-
-## Daftar Ide Tema #### Agenda Diskusi ##
 1.	Mengusulkan ide tema aplikasi mobile
 2.	Menentukan target pengguna aplikasi
 

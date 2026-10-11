@@ -26,10 +26,15 @@ Keva:
 4.
 
 Alfiah:
-1.
-2.
-3.
-4.
+1. Accept invitation
+2. Bukti konfirmasi
+
+![alt text](bukti-invite-alfiah.jpeg)
+
+3. Clone proyek
+4. Bukti konfirmasi
+
+![alt text](bukti-clone-repo-alfiah.jpeg)
 
 Tugas Bersama:
 1. Diskusi Penentuan Tema
@@ -69,7 +74,7 @@ Tema :
 1. Sistem Informasi Penjualan dan Pengelolaan Stok pada UMKM Sticky Milk
 
 Target :
-1. Pmeilik usaha Sticky milk
+1. Pemilik usaha Sticky milk
 
 Alfiah :
 

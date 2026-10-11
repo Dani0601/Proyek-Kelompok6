@@ -46,14 +46,17 @@ Tempat/Media    : Google meet
 ## Daftar Ide Tema ##
 
 Dani:
+
 Tema :
 1. Sistem Informasi Akademik dan Administrasi Siswa pada MA Nurul Huda
 2. Sistem Informasi Penjualan dan Pengelolaan Persediaan Produk pada UMKM Tellakrip
+
 Target :
 1. Staff TU dan Siswa
 2. Pelaku usaha Tellakrip
 
 Dimas :
+
 Tema :
 1. Sistem Informasi Pemesanan Jasa dan Pengelolaan Transaksi pada Bengkel Las Bubut
 
@@ -61,6 +64,7 @@ Target :
 1. Pemilik usaha bengkel
 
 Keva :
+
 Tema :
 1. Sistem Informasi Penjualan dan Pengelolaan Stok pada UMKM Sticky Milk
 
@@ -68,6 +72,7 @@ Target :
 1. Pmeilik usaha Sticky milk
 
 Alfiah :
+
 Tema :
 1. Sistem Informasi Akademik dan Pengelolaan Data Siswa pada SMP Tunas Bangsa
 2. Sistem Informasi Persediaan dan Penjualan Material Baja pada Cirebon Steel Material

@@ -14,10 +14,15 @@
 <img src="Screenrecorder-2026-10-11-21-41-42-642.gif" width="25%">
 
 Dimas :
-1.
-2.
-3.
-4.
+1. Accept Invitation
+2. Bukti Konfirmasi
+
+![alt text](bukti-invite-dimas.png)
+
+3. Clone Proyek
+4. Bukti Konfirmasi
+
+![alt text](bukti-clone-repo-dimas.png)
 
 Keva:
 1. Accept invitation

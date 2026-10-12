@@ -90,7 +90,8 @@ Tema :
 2. Sistem Informasi Persediaan dan Penjualan Material Baja pada Cirebon Steel Material
 
 ## Hasil dan Keputusan ##
-Tema yang diusulkan: Inventaris UMKM
+Tema yang diusulkan: Sistem Informasi Penjualan dan Pengelolaan Stok pada UMKM Sticky Milk
+
 Alasan pemilihan:
 1.	Melihat dari kapasitas tim
 2.	UMKM Sticky Milk dipilih karena usaha di bidang minuman berpotensi membutuhkan sistem untuk membantu pencatatan transaksi penjualan, pengelolaan stok produk atau bahan baku, serta pembuatan laporan penjualan.

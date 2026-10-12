@@ -20,10 +20,12 @@ Dimas :
 4.
 
 Keva:
-1.
-2.
-3.
-4.
+1. Accept invitation
+2. Bukti Konfirmasi
+![alt text](bukti-invite-istafty.png)
+3. Clone Proyek
+4. Bukti Konfirmasi
+![alt text](bukti-clone-repo-istafty.png)
 
 Alfiah:
 1. Accept invitation

@@ -66,9 +66,14 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 **bukti wawancara:**
 
 - **Narasumber:** Pemilik UMKM Sticky Milk 
-- **Tanggal wawancara:** 
-- **Media/tempat:** 
+- **Tanggal wawancara:**  Selasa, 13 Oktober 2026
+- **Tempat:** Jl. Muhammad Toha
 - **Bukti wawancara:** 
+
+![alt text](bukti-wawancara1.jpeg)
+![alt text](bukti-wawancara2.jpeg)
+![alt text](bukti-wawancara3.jpeg)
+![alt text](bukti-wawancara4.jpeg)
 
 # 2. Pembagian Tugas
 ##  Role dan Hak Akses
@@ -86,10 +91,16 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 * *Fungsi utama:* Menampilkan ringkasan aktivitas penjualan.
 * *Role terkait:* Admin/Pemilik
 ### Bukti Video/GIF Pengerjaan Layar
+
+![alt text](dashboard-screen-owner.jpeg)
+
 ## 3. *Manajemen Produk*
 * *Fungsi utama:* Menampilkan dan mengelola nama produk serta harga.
 * *Role terkait:* Admin/Pemilik
 ### Bukti Video/GIF Pengerjaan Layar
+
+![alt text](produk-screen-owner.gif)
+
 ## 4. *Transaksi Penjualan*
 * *Fungsi utama:* Memasukkan pesanan, jumlah produk, total, dan pembayaran.
 * *Role terkait:* Kasir/Pegawai

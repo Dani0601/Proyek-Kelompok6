@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 
-const DATA_PESANAN = [
+const DATA_AWAL = [
   { id: 'A-010', produk: 'Coklat (L) x 2', status: 'Siap' },
   { id: 'A-011', produk: 'Matcha (S) x 1', status: 'Diproses' },
   { id: 'A-012', produk: 'Durian (L) x 3', status: 'Menunggu' },
@@ -10,20 +10,34 @@ const DATA_PESANAN = [
 
 const FILTER = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
+const WARNA_STATUS = {
+  Menunggu: { bg: '#FDECC8', teks: '#9A6700' },
+  Diproses: { bg: '#DCEBFA', teks: '#1F5FA8' },
+  Siap: { bg: '#DDF3E0', teks: '#2E7D32' },
+};
+
 export default function KasirScreen() {
   const [filter, setFilter] = useState('Semua');
+  const [pesanan, setPesanan] = useState(DATA_AWAL);
+
+  const ubahStatus = (id) => {
+    setPesanan((lama) =>
+      lama.map((p) => {
+        if (p.id !== id) return p;
+        if (p.status === 'Menunggu') return { ...p, status: 'Diproses' };
+        if (p.status === 'Diproses') return { ...p, status: 'Siap' };
+        return p;
+      })
+    );
+  };
 
   const dataTampil =
-    filter === 'Semua'
-      ? DATA_PESANAN
-      : DATA_PESANAN.filter((p) => p.status === filter);
+    filter === 'Semua' ? pesanan : pesanan.filter((p) => p.status === filter);
 
   return (
     <View style={styles.container}>
       <Text style={styles.judul}>Antrean Pesanan</Text>
-      <Text style={styles.subjudul}>
-        {DATA_PESANAN.length} pesanan aktif hari ini
-      </Text>
+      <Text style={styles.subjudul}>{pesanan.length} pesanan aktif hari ini</Text>
 
       <View style={styles.filterRow}>
         {FILTER.map((f) => (
@@ -42,20 +56,38 @@ export default function KasirScreen() {
       <FlatList
         data={dataTampil}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.kartu}>
-            <View style={styles.nomorBox}>
-              <Text style={styles.nomor}>{item.id}</Text>
+        renderItem={({ item }) => {
+          const warna = WARNA_STATUS[item.status];
+          const selesai = item.status === 'Siap';
+          return (
+            <View style={styles.kartu}>
+              <View style={styles.nomorBox}>
+                <Text style={styles.nomor}>{item.id}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.produk}>{item.produk}</Text>
+                <View style={[styles.badge, { backgroundColor: warna.bg }]}>
+                  <Text style={[styles.badgeText, { color: warna.teks }]}>
+                    {item.status}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.tombol, selesai && styles.tombolNonaktif]}
+                onPress={() => ubahStatus(item.id)}
+                disabled={selesai}
+              >
+                <Text style={styles.tombolText}>
+                  {item.status === 'Menunggu'
+                    ? 'Proses'
+                    : item.status === 'Diproses'
+                    ? 'Selesai'
+                    : 'Siap'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.produk}>{item.produk}</Text>
-              <Text style={styles.status}>{item.status}</Text>
-            </View>
-            <TouchableOpacity style={styles.tombol}>
-              <Text style={styles.tombolText}>Proses</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          );
+        }}
       />
     </View>
   );
@@ -92,12 +124,20 @@ const styles = StyleSheet.create({
   },
   nomor: { fontWeight: 'bold', color: '#8B5A3C' },
   produk: { fontSize: 14, fontWeight: '600', color: '#3B2A1E' },
-  status: { fontSize: 11, color: '#8A7A6B', marginTop: 2 },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  badgeText: { fontSize: 11, fontWeight: '600' },
   tombol: {
     backgroundColor: '#8B5A3C',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
   },
+  tombolNonaktif: { backgroundColor: '#C9B8A8' },
   tombolText: { color: '#FFFFFF', fontSize: 12 },
 });

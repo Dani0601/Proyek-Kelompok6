@@ -114,7 +114,14 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 * *Fungsi utama:* Menampilkan nomor antrean dan status pesanan.
 * *Role terkait:* Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar
+<div align="center">
+  <img src="antrian.gif" width="45%">
+</div>
 ## 6. *Riwayat dan Laporan*
 * *Fungsi utama:* Menampilkan transaksi terdahulu dan rekap penjualan.
-* *Role terkait:* Admin/Pemilik
+* *Role terkait:* Owner/Pemilik & Kasir
 ### Bukti Video/GIF Pengerjaan Layar
+<div align="center">
+  <img src="laporan-riwayat.gif" width="45%">
+  <img src="riwayat.gif" width="45%">
+</div>

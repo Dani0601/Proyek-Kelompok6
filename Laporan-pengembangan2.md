@@ -70,10 +70,15 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 - **Tempat:** Jl. Muhammad Toha
 - **Bukti wawancara:** 
 
-![alt text](bukti-wawancara1.jpeg)
-![alt text](bukti-wawancara2.jpeg)
-![alt text](bukti-wawancara3.jpeg)
-![alt text](bukti-wawancara4.jpeg)
+<div align="center">
+  <img src="bukti-wawancara1.jpeg" width="45%">
+  <img src="bukti-wawancara4.jpeg" width="45%">
+</div>
+
+<div align="center">
+  <img src="bukti-wawancara2.jpeg" width="45%">
+  <img src="bukti-wawancara3.jpeg" width="45%">
+</div>
 
 # 2. Pembagian Tugas
 ##  Role dan Hak Akses
@@ -113,5 +118,3 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 * *Fungsi utama:* Menampilkan transaksi terdahulu dan rekap penjualan.
 * *Role terkait:* Admin/Pemilik
 ### Bukti Video/GIF Pengerjaan Layar
-
-

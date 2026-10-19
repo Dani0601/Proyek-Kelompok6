@@ -83,8 +83,8 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 # 2. Pembagian Tugas
 ##  Role dan Hak Akses
 
-**Owner/Pemilik** : Memantau ringkasan penjualan, produk/stok, riwayat transaksi, dan laporan. | Login, Dashboard, Produk/Stok, Riwayat dan Laporan. |
-**Kasir/Pegawai** : Melayani transaksi dan memantau urutan pesanan. | Login, Dashboard, Transaksi Penjualan, Antrean Pesanan, Produk. |
+**Owner/Pemilik** : Memantau ringkasan penjualan, produk/stok, riwayat transaksi, dan laporan : Login, Dashboard, Produk/Stok, Riwayat dan Laporan. 
+**Kasir/Pegawai** : Melayani transaksi dan memantau urutan pesanan :  Login, Dashboard, Transaksi Penjualan, Antrean Pesanan, Produk.
 
 # 3. Rancangan Layar
 
@@ -92,6 +92,11 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 * *Fungsi utama:* Memvalidasi pengguna sebelum masuk ke aplikasi.
 * *Role terkait:* Admin/Pemilik, Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar
+
+![alt text](loginOwner.gif)
+
+![alt text](loginKasir.gif)
+
 ## 2. *Dashboard*
 * *Fungsi utama:* Menampilkan ringkasan aktivitas penjualan.
 * *Role terkait:* Admin/Pemilik

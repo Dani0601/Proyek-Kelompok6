@@ -84,7 +84,15 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 ##  Role dan Hak Akses
 
 **Owner/Pemilik** : Memantau ringkasan penjualan, produk/stok, riwayat transaksi, dan laporan : Login, Dashboard, Produk/Stok, Riwayat dan Laporan. 
+
 **Kasir/Pegawai** : Melayani transaksi dan memantau urutan pesanan :  Login, Dashboard, Transaksi Penjualan, Antrean Pesanan, Produk.
+
+## pembagian tugas
+
+1. Dani : Login (Owner dan Kasir)
+2. Alfiah : Dashboard, manajemen produk (owner)
+3. Dimas : Transaksi penjualan (kasir)
+4. Keva : Antrean pesanan (kasir), Riwayat dan laporan (owner dan kasir)
 
 # 3. Rancangan Layar
 

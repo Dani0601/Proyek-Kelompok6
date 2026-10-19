@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-
-const DATA_AWAL = [
-  { id: 'A-010', produk: 'Coklat (L) x 2', status: 'Siap' },
-  { id: 'A-011', produk: 'Matcha (S) x 1', status: 'Diproses' },
-  { id: 'A-012', produk: 'Durian (L) x 3', status: 'Menunggu' },
-  { id: 'A-013', produk: 'Redvelvet (S) x 2', status: 'Menunggu' },
-];
+import { useOrders } from './OrderContext';
 
 const FILTER = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
@@ -18,18 +12,7 @@ const WARNA_STATUS = {
 
 export default function KasirScreen() {
   const [filter, setFilter] = useState('Semua');
-  const [pesanan, setPesanan] = useState(DATA_AWAL);
-
-  const ubahStatus = (id) => {
-    setPesanan((lama) =>
-      lama.map((p) => {
-        if (p.id !== id) return p;
-        if (p.status === 'Menunggu') return { ...p, status: 'Diproses' };
-        if (p.status === 'Diproses') return { ...p, status: 'Siap' };
-        return p;
-      })
-    );
-  };
+  const { pesanan, ubahStatus } = useOrders();
 
   const dataTampil =
     filter === 'Semua' ? pesanan : pesanan.filter((p) => p.status === filter);
@@ -65,7 +48,8 @@ export default function KasirScreen() {
                 <Text style={styles.nomor}>{item.id}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.produk}>{item.produk}</Text>
+                <Text style={styles.produk} numberOfLines={2}>{item.produk}</Text>
+                {item.metode ? <Text style={styles.detail}>{item.metode}</Text> : null}
                 <View style={[styles.badge, { backgroundColor: warna.bg }]}>
                   <Text style={[styles.badgeText, { color: warna.teks }]}>
                     {item.status}
@@ -124,6 +108,7 @@ const styles = StyleSheet.create({
   },
   nomor: { fontWeight: 'bold', color: '#8B5A3C' },
   produk: { fontSize: 14, fontWeight: '600', color: '#3B2A1E' },
+  detail: { fontSize: 12, color: '#8A7A6B', marginTop: 2 },
   badge: {
     alignSelf: 'flex-start',
     paddingVertical: 2,

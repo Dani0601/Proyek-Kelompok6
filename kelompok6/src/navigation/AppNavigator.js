@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrderProvider } from '../screens/kasir/OrderContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -67,14 +68,16 @@ function CashierTabs() {
 export default function AppNavigator() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" backgroundColor={COLORS.cream} />
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
-          <Stack.Screen name="CashierTabs" component={CashierTabs} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <OrderProvider>
+        <StatusBar style="dark" backgroundColor={COLORS.cream} />
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
+            <Stack.Screen name="CashierTabs" component={CashierTabs} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </OrderProvider>
     </SafeAreaProvider>
   );
 }

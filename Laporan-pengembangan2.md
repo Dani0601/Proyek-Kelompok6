@@ -118,7 +118,7 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 
 <image src="transaksi-screen-kasir.gif" autoplay="true" ldioop="true" muted="true" width="20%"></image>
 
-## 5. *Antrean Pesanan* - DIMAS
+## 5. *Antrean Pesanan* - KEVA
 * *Fungsi utama:* Menampilkan nomor antrean dan status pesanan.
 * *Role terkait:* Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar

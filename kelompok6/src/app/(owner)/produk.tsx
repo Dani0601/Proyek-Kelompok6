@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -48,17 +48,35 @@ const FONTS = {
 };
 
 // ---------- Helper ----------
-const formatRupiah = (n) =>
-  'Rp ' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+type Product = {
+  id: number;
+  name: string;
+  hasSizes: boolean;
+  price?: number;
+  priceS?: number;
+  priceL?: number;
+  accent: string;
+};
 
-const onlyDigits = (text) => text.replace(/[^0-9]/g, '');
+type FormState = {
+  name: string;
+  hasSizes: boolean;
+  price: string;
+  priceS: string;
+  priceL: string;
+};
 
-const priceLabel = (p) =>
+const formatRupiah = (n: number | undefined) =>
+  'Rp ' + String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+const onlyDigits = (text: string) => text.replace(/[^0-9]/g, '');
+
+const priceLabel = (p: Product) =>
   p.hasSizes
     ? `S ${formatRupiah(p.priceS)} · L ${formatRupiah(p.priceL)}`
     : formatRupiah(p.price);
 
-const EMPTY_FORM = {
+const EMPTY_FORM: FormState = {
   name: '',
   hasSizes: false,
   price: '',
@@ -66,7 +84,7 @@ const EMPTY_FORM = {
   priceL: '',
 };
 
-const INITIAL_PRODUCTS = [
+const INITIAL_PRODUCTS: Product[] = [
   { id: 1, name: 'Sticky Milk Coklat', hasSizes: true, priceS: 10000, priceL: 19000, accent: COLORS.caramel },
   { id: 2, name: 'Sticky Milk Taro', hasSizes: true, priceS: 9000, priceL: 17000, accent: COLORS.caramel },
   { id: 3, name: 'Smoothies Durian', hasSizes: false, price: 26000, accent: COLORS.mango },
@@ -75,7 +93,13 @@ const INITIAL_PRODUCTS = [
 ];
 
 // Kolom input harga dengan awalan "Rp"
-function PriceField({ label, value, onChangeText }) {
+type PriceFieldProps = {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+};
+
+function PriceField({ label, value, onChangeText }: PriceFieldProps) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -84,7 +108,7 @@ function PriceField({ label, value, onChangeText }) {
         <TextInput
           style={styles.inputText}
           value={value}
-          onChangeText={(t) => onChangeText(onlyDigits(t))}
+          onChangeText={(t: string) => onChangeText(onlyDigits(t))}
           keyboardType="number-pad"
           placeholder="0"
           placeholderTextColor={COLORS.textMuted}
@@ -103,17 +127,17 @@ export default function ProdukScreen() {
     Nunito_700Bold,
   });
 
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [query, setQuery] = useState('');
 
   // Formulir tambah / edit
   const [formVisible, setFormVisible] = useState(false);
-  const [editingId, setEditingId] = useState(null); // null = mode tambah
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<number | null>(null); // null = mode tambah
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState('');
 
   // Konfirmasi hapus
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const nextId = useRef(6);
 
@@ -123,7 +147,7 @@ export default function ProdukScreen() {
     return products.filter((p) => p.name.toLowerCase().includes(q));
   }, [products, query]);
 
-  const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
   const openAdd = () => {
     setEditingId(null);
@@ -132,14 +156,14 @@ export default function ProdukScreen() {
     setFormVisible(true);
   };
 
-  const openEdit = (item) => {
+  const openEdit = (item: Product) => {
     setEditingId(item.id);
     setForm({
       name: item.name,
       hasSizes: item.hasSizes,
-      price: item.hasSizes ? '' : String(item.price),
-      priceS: item.hasSizes ? String(item.priceS) : '',
-      priceL: item.hasSizes ? String(item.priceL) : '',
+      price: item.hasSizes ? '' : String(item.price ?? 0),
+      priceS: item.hasSizes ? String(item.priceS ?? 0) : '',
+      priceL: item.hasSizes ? String(item.priceL ?? 0) : '',
     });
     setError('');
     setFormVisible(true);
@@ -154,7 +178,7 @@ export default function ProdukScreen() {
       return;
     }
 
-    let priceData;
+    let priceData: Pick<Product, 'hasSizes' | 'price' | 'priceS' | 'priceL'>;
     if (form.hasSizes) {
       const priceS = Number(form.priceS);
       const priceL = Number(form.priceL);
@@ -186,7 +210,7 @@ export default function ProdukScreen() {
   };
 
   const confirmDelete = () => {
-    setProducts((list) => list.filter((p) => p.id !== deleteTarget.id));
+    setProducts((list) => list.filter((p) => p.id !== deleteTarget?.id));
     setDeleteTarget(null);
   };
 
@@ -290,7 +314,7 @@ export default function ProdukScreen() {
                   <TextInput
                     style={styles.inputText}
                     value={form.name}
-                    onChangeText={(t) => setField('name', t)}
+                    onChangeText={(t: string) => setField('name', t)}
                     placeholder="Contoh: Sticky Milk Matcha"
                     placeholderTextColor={COLORS.textMuted}
                   />
@@ -304,7 +328,7 @@ export default function ProdukScreen() {
                 </View>
                 <Switch
                   value={form.hasSizes}
-                  onValueChange={(v) => setField('hasSizes', v)}
+                  onValueChange={(v: boolean) => setField('hasSizes', v)}
                   trackColor={{ false: COLORS.sand, true: COLORS.caramel }}
                   thumbColor={form.hasSizes ? COLORS.brown : '#FFFFFF'}
                 />
@@ -316,14 +340,14 @@ export default function ProdukScreen() {
                     <PriceField
                       label="Harga S"
                       value={form.priceS}
-                      onChangeText={(t) => setField('priceS', t)}
+                      onChangeText={(t: string) => setField('priceS', t)}
                     />
                   </View>
                   <View style={styles.flex}>
                     <PriceField
                       label="Harga L"
                       value={form.priceL}
-                      onChangeText={(t) => setField('priceL', t)}
+                      onChangeText={(t: string) => setField('priceL', t)}
                     />
                   </View>
                 </View>
@@ -331,7 +355,7 @@ export default function ProdukScreen() {
                 <PriceField
                   label="Harga"
                   value={form.price}
-                  onChangeText={(t) => setField('price', t)}
+                  onChangeText={(t: string) => setField('price', t)}
                 />
               )}
 

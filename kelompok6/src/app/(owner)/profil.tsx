@@ -1,12 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function ProfilScreen({ navigation }) {
+export default function ProfilScreen() {
+  const router = useRouter();
+
   const handleBackToLogin = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+    router.replace('/');
   };
 
   return (

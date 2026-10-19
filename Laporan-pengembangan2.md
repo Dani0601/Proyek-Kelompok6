@@ -88,7 +88,7 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 
 # 3. Rancangan Layar
 
-## 1. *Login*
+## 1. *Login* - DANI
 * *Fungsi utama:* Memvalidasi pengguna sebelum masuk ke aplikasi.
 * *Role terkait:* Admin/Pemilik, Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar
@@ -97,35 +97,36 @@ Berdasarkan temuan tersebut, kebutuhan utama yang menjadi dasar rancangan aplika
 
 ![alt text](loginKasir.gif)
 
-## 2. *Dashboard*
+## 2. *Dashboard* - ALFIAH
 * *Fungsi utama:* Menampilkan ringkasan aktivitas penjualan.
 * *Role terkait:* Admin/Pemilik
 ### Bukti Video/GIF Pengerjaan Layar
 
 ![alt text](dashboard-screen-owner.jpeg)
 
-## 3. *Manajemen Produk*
+## 3. *Manajemen Produk* - ALFIAH
 * *Fungsi utama:* Menampilkan dan mengelola nama produk serta harga.
 * *Role terkait:* Admin/Pemilik
 ### Bukti Video/GIF Pengerjaan Layar
 
 ![alt text](produk-screen-owner.gif)
 
-## 4. *Transaksi Penjualan*
+## 4. *Transaksi Penjualan* - DIMAS
 * *Fungsi utama:* Memasukkan pesanan, jumlah produk, total, dan pembayaran.
 * *Role terkait:* Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar
 
 <image src="transaksi-screen-kasir.gif" autoplay="true" ldioop="true" muted="true" width="20%"></image>
 
-## 5. *Antrean Pesanan*
+## 5. *Antrean Pesanan* - DIMAS
 * *Fungsi utama:* Menampilkan nomor antrean dan status pesanan.
 * *Role terkait:* Kasir/Pegawai
 ### Bukti Video/GIF Pengerjaan Layar
 <div align="center">
   <img src="antrian.gif" width="45%">
 </div>
-## 6. *Riwayat dan Laporan*
+
+## 6. *Riwayat dan Laporan* - KEVA
 * *Fungsi utama:* Menampilkan transaksi terdahulu dan rekap penjualan.
 * *Role terkait:* Owner/Pemilik & Kasir
 ### Bukti Video/GIF Pengerjaan Layar

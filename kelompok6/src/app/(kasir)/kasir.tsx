@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 
-type Status = 'Menunggu' | 'Diproses' | 'Siap';
-type Pesanan = { id: string; produk: string; status: Status };
-
-const DATA_AWAL: Pesanan[] = [
-  { id: 'A-010', produk: 'Coklat (L) x 2', status: 'Siap' },
-  { id: 'A-011', produk: 'Matcha (S) x 1', status: 'Diproses' },
-  { id: 'A-012', produk: 'Durian (L) x 3', status: 'Menunggu' },
-  { id: 'A-013', produk: 'Redvelvet (S) x 2', status: 'Menunggu' },
-];
+import { useOrders, type Status } from '@/context/order-context';
 
 const FILTER: ('Semua' | Status)[] = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
@@ -21,18 +13,7 @@ const WARNA_STATUS: Record<Status, { bg: string; teks: string }> = {
 
 export default function KasirScreen() {
   const [filter, setFilter] = useState<'Semua' | Status>('Semua');
-  const [pesanan, setPesanan] = useState<Pesanan[]>(DATA_AWAL);
-
-  const ubahStatus = (id: string) => {
-    setPesanan((lama) =>
-      lama.map((p) => {
-        if (p.id !== id) return p;
-        if (p.status === 'Menunggu') return { ...p, status: 'Diproses' };
-        if (p.status === 'Diproses') return { ...p, status: 'Siap' };
-        return p;
-      })
-    );
-  };
+  const { pesanan, ubahStatus } = useOrders();
 
   const dataTampil =
     filter === 'Semua' ? pesanan : pesanan.filter((p) => p.status === filter);

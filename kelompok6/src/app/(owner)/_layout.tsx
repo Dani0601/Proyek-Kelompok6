@@ -42,10 +42,22 @@ export default function OwnerTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="transaksi"
+        name="stok"
         options={{
-          title: 'Transaksi',
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color} size={size} />,
+          title: 'Stok',
+          tabBarIcon: ({ color, size }) => <Ionicons name="archive-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tambah-bahan"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="stok-masuk"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen

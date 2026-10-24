@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { OrderProvider } from '@/context/order-context';
+import { BahanProvider } from '@/context/bahan-context';
 
 const COLORS = {
   cream: '#FFF7ED',
@@ -10,12 +11,14 @@ const COLORS = {
 export default function RootLayout() {
   return (
     <OrderProvider>
-      <StatusBar style="dark" backgroundColor={COLORS.cream} />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(owner)" />
-        <Stack.Screen name="(kasir)" />
-      </Stack>
+      <BahanProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(owner)" />
+          <Stack.Screen name="(kasir)" />
+        </Stack>
+      </BahanProvider>
     </OrderProvider>
   );
 }

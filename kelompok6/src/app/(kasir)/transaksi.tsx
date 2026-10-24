@@ -7,11 +7,23 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useOrders, type Metode } from '@/context/order-context';
+import AppButton from '@/components/atoms/AppButton';
+import AppInput from '@/components/atoms/AppInput';
+import ProductCard from '@/components/molecules/ProductCard';
+import ProductList from '@/components/organisms/ProductList';
+import { StickyMilkColors } from '@/constants/design-tokens';
 
 const COLORS = {
-  bg: '#FFF6ED', card: '#FFFFFF', thumbBg: '#F1E3D3', thumbInner: '#C08A5E',
-  thumbInnerDark: '#402D1E', textDark: '#402D1E', primary: '#8B5F3C',
-  accent: '#C08A5E', muted: '#8A7A6C', border: '#F1E3D3',
+  bg: StickyMilkColors.background,
+  card: StickyMilkColors.surface,
+  thumbBg: StickyMilkColors.thumb,
+  thumbInner: StickyMilkColors.primaryLight,
+  thumbInnerDark: StickyMilkColors.text,
+  textDark: StickyMilkColors.text,
+  primary: StickyMilkColors.primary,
+  accent: StickyMilkColors.primaryLight,
+  muted: StickyMilkColors.textMuted,
+  border: StickyMilkColors.border,
 };
 
 type Item = {
@@ -101,22 +113,15 @@ export default function TransaksiPenjualanScreen() {
         <Text style={styles.title}>Transaksi Penjualan</Text>
         <Text style={styles.subtitle}>Pesanan baru · Antrean #{nomorBerikutnya}</Text>
 
-        <View style={styles.list}>
+        <ProductList style={styles.list} itemSpacing={13}>
           {items.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <View style={styles.thumb}>
-                <View
-                  style={[styles.thumbInner, item.dark && { backgroundColor: COLORS.thumbInnerDark }]}
-                />
-              </View>
-
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.itemPrice}>
-                  {item.variant ? `${item.variant} · ` : ''}{formatRupiah(item.price)}
-                </Text>
-              </View>
-
+            <ProductCard
+              key={item.id}
+              title={item.name}
+              subtitle={`${item.variant ? `${item.variant} · ` : ''}${formatRupiah(item.price)}`}
+              accent={item.dark ? COLORS.thumbInnerDark : COLORS.thumbInner}
+              style={styles.itemCard}
+            >
               <View style={styles.stepper}>
                 <Pressable
                   onPress={() => changeQty(item.id, -1)}
@@ -139,9 +144,9 @@ export default function TransaksiPenjualanScreen() {
                   <Text style={[styles.stepText, { color: '#fff' }]}>+</Text>
                 </Pressable>
               </View>
-            </View>
+            </ProductCard>
           ))}
-        </View>
+        </ProductList>
 
         <Text style={styles.sectionTitle}>Metode pembayaran</Text>
         <View style={styles.methodRow}>
@@ -176,7 +181,7 @@ export default function TransaksiPenjualanScreen() {
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Uang diterima</Text>
-                <TextInput
+                <AppInput
                   style={styles.cashInput}
                   value={cashReceived ? formatRupiah(parseNumber(cashReceived)) : ''}
                   onChangeText={(t: string) => setCashReceived(String(parseNumber(t)))}
@@ -184,6 +189,7 @@ export default function TransaksiPenjualanScreen() {
                   placeholder="Rp 0"
                   placeholderTextColor={COLORS.muted}
                   selectTextOnFocus
+                  accessibilityLabel="Uang diterima"
                 />
               </View>
               {received >= total && total > 0 && (
@@ -201,9 +207,9 @@ export default function TransaksiPenjualanScreen() {
           </View>
         </View>
 
-        <Pressable onPress={handlePay} style={({ pressed }) => [styles.payBtn, pressed && styles.pressed]}>
+        <AppButton onPress={handlePay} style={styles.payBtn}>
           <Text style={styles.payText}>Bayar & Buat Antrean</Text>
-        </Pressable>
+        </AppButton>
       </ScrollView>
     </SafeAreaView>
   );

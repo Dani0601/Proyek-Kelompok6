@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native
 
 import { useOrders, type Status } from '@/context/order-context';
 
+import PageTemplate from '@/components/templates/PageTemplate';
 const FILTER: ('Semua' | Status)[] = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
 const WARNA_STATUS: Record<Status, { bg: string; teks: string }> = {
@@ -19,7 +20,7 @@ export default function KasirScreen() {
     filter === 'Semua' ? pesanan : pesanan.filter((p) => p.status === filter);
 
   return (
-    <View style={styles.container}>
+    <PageTemplate style={styles.container}>
       <Text style={styles.judul}>Antrean Pesanan</Text>
       <Text style={styles.subjudul}>{pesanan.length} pesanan aktif hari ini</Text>
 
@@ -73,7 +74,7 @@ export default function KasirScreen() {
           );
         }}
       />
-    </View>
+    </PageTemplate>
   );
 }
 

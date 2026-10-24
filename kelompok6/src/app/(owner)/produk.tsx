@@ -14,6 +14,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AppButton from '@/components/atoms/AppButton';
+import AppInput from '@/components/atoms/AppInput';
+import ProductCard from '@/components/molecules/ProductCard';
+import ProductList from '@/components/organisms/ProductList';
+import PriceField from '@/components/molecules/PriceField';
 
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
@@ -22,21 +27,22 @@ import {
   Nunito_600SemiBold,
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
+import { StickyMilkColors } from '@/constants/design-tokens';
 
 const COLORS = {
-  background: '#FFF5EA',
-  card: '#FFFFFF',
-  brown: '#8B5E3C',
-  caramel: '#C48B60',
-  sand: '#EEE2D3',
-  mango: '#E8B84B',
-  textDark: '#3A2418',
-  textMuted: '#8E7B6D',
-  border: '#F3E6D8',
-  iconButton: '#FFF3E6',
-  danger: '#C0392B',
-  dangerSoft: '#FCEBE8',
-  overlay: 'rgba(58, 36, 24, 0.45)',
+  background: StickyMilkColors.cream,
+  card: StickyMilkColors.surface,
+  brown: StickyMilkColors.primary,
+  caramel: StickyMilkColors.accent,
+  sand: StickyMilkColors.sand,
+  mango: StickyMilkColors.mango,
+  textDark: StickyMilkColors.textDark,
+  textMuted: StickyMilkColors.textMuted,
+  border: StickyMilkColors.borderWarm,
+  iconButton: StickyMilkColors.iconButton,
+  danger: StickyMilkColors.danger,
+  dangerSoft: StickyMilkColors.dangerSoft,
+  overlay: StickyMilkColors.overlay,
 };
 
 const FONTS = {
@@ -69,8 +75,6 @@ type FormState = {
 const formatRupiah = (n: number | undefined) =>
   'Rp ' + String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-const onlyDigits = (text: string) => text.replace(/[^0-9]/g, '');
-
 const priceLabel = (p: Product) =>
   p.hasSizes
     ? `S ${formatRupiah(p.priceS)} · L ${formatRupiah(p.priceL)}`
@@ -91,32 +95,6 @@ const INITIAL_PRODUCTS: Product[] = [
   { id: 4, name: 'Smoothies Mangga', hasSizes: false, price: 21000, accent: COLORS.caramel },
   { id: 5, name: 'Topping Oreo', hasSizes: false, price: 3000, accent: COLORS.caramel },
 ];
-
-// Kolom input harga dengan awalan "Rp"
-type PriceFieldProps = {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-};
-
-function PriceField({ label, value, onChangeText }: PriceFieldProps) {
-  return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.input}>
-        <Text style={styles.prefix}>Rp</Text>
-        <TextInput
-          style={styles.inputText}
-          value={value}
-          onChangeText={(t: string) => onChangeText(onlyDigits(t))}
-          keyboardType="number-pad"
-          placeholder="0"
-          placeholderTextColor={COLORS.textMuted}
-        />
-      </View>
-    </View>
-  );
-}
 
 export default function ProdukScreen() {
   const [fontsLoaded] = useFonts({
@@ -229,29 +207,20 @@ export default function ProdukScreen() {
         {/* Pencarian */}
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={24} color="#8E7B6D" />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Cari produk"
             placeholderTextColor="#8E7B6D"
             value={query}
             onChangeText={setQuery}
+            accessibilityLabel="Cari produk"
           />
         </View>
 
         {/* Daftar produk */}
+        <ProductList itemSpacing={12}>
         {filtered.map((item) => (
-          <View key={item.id} style={styles.card}>
-            <View style={styles.thumb}>
-              <View style={[styles.thumbInner, { backgroundColor: item.accent }]} />
-            </View>
-
-            <View style={styles.info}>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={styles.price}>{priceLabel(item)}</Text>
-            </View>
-
+          <ProductCard key={item.id} title={item.name} subtitle={priceLabel(item)} accent={item.accent} style={styles.card}>
             <TouchableOpacity
               style={styles.editButton}
               activeOpacity={0.7}
@@ -266,8 +235,9 @@ export default function ProdukScreen() {
             >
               <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
             </TouchableOpacity>
-          </View>
+          </ProductCard>
         ))}
+        </ProductList>
 
         {filtered.length === 0 && (
           <Text style={styles.empty}>
@@ -278,13 +248,9 @@ export default function ProdukScreen() {
         )}
 
         {/* Tombol tambah */}
-        <TouchableOpacity
-          style={styles.addButton}
-          activeOpacity={0.85}
-          onPress={openAdd}
-        >
+        <AppButton style={styles.addButton} onPress={openAdd}>
           <Text style={styles.addButtonText}>+ Tambah Produk</Text>
-        </TouchableOpacity>
+        </AppButton>
       </ScrollView>
 
       {/* Modal tambah / edit */}
@@ -564,12 +530,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.border,
     paddingHorizontal: 14,
-  },
-  prefix: {
-    fontFamily: FONTS.bodyBold,
-    fontSize: 15,
-    color: COLORS.brown,
-    marginRight: 8,
   },
   inputText: {
     flex: 1,

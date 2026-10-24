@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AppButton from '@/components/atoms/AppButton';
+import AppInput from '@/components/atoms/AppInput';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -93,7 +95,7 @@ export default function LoginScreen() {
               color="#8A8A8A"
             />
 
-            <TextInput
+            <AppInput
               style={styles.input}
               placeholder="Masukkan email atau username"
               placeholderTextColor="#A0A0A0"
@@ -113,6 +115,7 @@ export default function LoginScreen() {
               autoCorrect={false}
               returnKeyType="next"
               accessibilityLabel="Email atau Username"
+              invalid={!!errors.email}
             />
           </View>
 
@@ -135,7 +138,7 @@ export default function LoginScreen() {
               color="#8A8A8A"
             />
 
-            <TextInput
+            <AppInput
               style={styles.input}
               placeholder="Masukkan password"
               placeholderTextColor="#A0A0A0"
@@ -156,6 +159,7 @@ export default function LoginScreen() {
               returnKeyType="done"
               onSubmitEditing={handleLogin}
               accessibilityLabel="Password"
+              invalid={!!errors.password}
             />
 
             <TouchableOpacity
@@ -219,19 +223,10 @@ export default function LoginScreen() {
             <Text style={styles.forgotText}>Lupa password?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-          >
+          <AppButton style={styles.loginButton} onPress={handleLogin} accessibilityLabel="Masuk">
             <Text style={styles.loginButtonText}>Masuk</Text>
-            <Ionicons
-              name="arrow-forward"
-              size={20}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          </AppButton>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>

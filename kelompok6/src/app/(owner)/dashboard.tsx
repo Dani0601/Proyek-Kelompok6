@@ -8,18 +8,19 @@ import {
   Nunito_600SemiBold,
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
+import { StickyMilkColors } from '@/constants/design-tokens';
 
 const COLORS = {
-  background: '#FFF5EA',
-  card: '#FFFFFF',
-  brown: '#8B5E3C',
-  caramel: '#C48B60',
-  sand: '#EEE2D3',
-  mango: '#E8B84B',
-  textDark: '#3A2418',
-  textMuted: '#8E7B6D',
-  border: '#F3E6D8',
-  iconButton: '#FFF3E6',
+  background: StickyMilkColors.cream,
+  card: StickyMilkColors.surface,
+  brown: StickyMilkColors.primary,
+  caramel: StickyMilkColors.accent,
+  sand: StickyMilkColors.sand,
+  mango: StickyMilkColors.mango,
+  textDark: StickyMilkColors.textDark,
+  textMuted: StickyMilkColors.textMuted,
+  border: StickyMilkColors.borderWarm,
+  iconButton: StickyMilkColors.iconButton,
 };
 
 const FONTS = {

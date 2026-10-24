@@ -1,15 +1,16 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
+import { StickyMilkColors } from '@/constants/design-tokens';
 
 const COLORS = {
-  brown: '#8B5E3C',
-  muted: '#A79B91',
-  border: '#EEE7E1',
+  brown: StickyMilkColors.primary,
+  muted: StickyMilkColors.mutedTab,
+  border: StickyMilkColors.tabBorder,
 };
 
 const styles = StyleSheet.create({
-  tabBar: { minHeight: 62, paddingTop: 5, paddingBottom: 5, borderTopColor: COLORS.border, backgroundColor: '#FFFFFF' },
+  tabBar: { minHeight: 62, paddingTop: 5, paddingBottom: 5, borderTopColor: COLORS.border, backgroundColor: StickyMilkColors.surface },
   tabLabel: { fontSize: 10, fontWeight: '600' },
   tabItem: { paddingVertical: 2 },
 });

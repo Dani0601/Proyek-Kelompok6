@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
+import PageTemplate from '@/components/templates/PageTemplate';
 const FILTER = ['Hari ini', 'Minggu ini', 'Bulan ini'] as const;
 
 type Periode = 'hari' | 'minggu' | 'bulan';
@@ -66,7 +67,7 @@ export default function LaporanScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <PageTemplate style={styles.container}>
       <Text style={styles.judul}>Riwayat dan Laporan</Text>
       <Text style={styles.subjudul}>Transaksi terdahulu dan rekap penjualan</Text>
 
@@ -127,7 +128,7 @@ export default function LaporanScreen() {
           </View>
         )}
       />
-    </View>
+    </PageTemplate>
   );
 }
 

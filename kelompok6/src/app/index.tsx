@@ -45,7 +45,7 @@ export default function LoginScreen() {
     if (role === 'owner') {
       router.replace('/(owner)/dashboard');
     } else {
-      router.replace('/(kasir)/kasir');
+      router.replace('/(kasir)/dashboard');
     }
   };
 

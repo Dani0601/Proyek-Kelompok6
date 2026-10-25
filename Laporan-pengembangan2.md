@@ -9,7 +9,7 @@
 - **Platform/teknologi:** React Native dengan Expo
 - **Anggota kelompok:**
   1. Dani Hidayat
-  2. Dimas Fathurrohhman
+  2. Dimas Faturohman
   3. Istafty Keva Yuftika
   4. Alfiah Lutfi Sabilah
 

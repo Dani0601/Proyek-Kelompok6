@@ -68,15 +68,6 @@ export default function ProdukScreen() {
             <Text style={styles.title}>Manajemen Produk</Text>
             <Text style={styles.subtitle}>Kelola nama produk dan harga</Text>
           </View>
-          <TouchableOpacity
-            style={styles.resepButton}
-            activeOpacity={0.8}
-            onPress={() => {
-              // TODO: arahkan ke layar Resep (belum ada)
-            }}
-          >
-            <Text style={styles.resepText}>Resep</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Pencarian */}

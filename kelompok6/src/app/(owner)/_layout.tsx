@@ -42,6 +42,18 @@ export default function OwnerTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tambah-produk"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="edit-produk"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="stok"
         options={{
           title: 'Stok',

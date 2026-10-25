@@ -80,7 +80,7 @@ export default function ProfilScreen() {
     },
   ];
 
-  const handleKeluar = () => router.replace('/');
+  const handleKeluar = () => router.replace('/login');
 
   return (
     <PageTemplate>

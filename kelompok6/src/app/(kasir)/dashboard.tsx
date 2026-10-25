@@ -32,7 +32,7 @@ export default function DashboardKasir() {
       </View>
 
       <View style={styles.kartuTotal}>
-        <Text style={styles.totalLabel}>Penjualan saya hari ini</Text>
+        <Text style={styles.totalLabel}>Penjualan Saya Hari Ini</Text>
         <Text style={styles.totalAngka}>Rp 640.000</Text>
       </View>
 

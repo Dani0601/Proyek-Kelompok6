@@ -76,7 +76,7 @@ export default function TambahProdukScreen() {
       // Resep awal berlaku untuk semua varian; ubah per ukuran lewat layar Edit.
       resep: hasSizes ? { S: items, L: items.map((i) => ({ ...i })) } : { single: items },
     });
-    router.back();
+    router.push('/(owner)/produk');
   };
 
   return (
@@ -84,7 +84,7 @@ export default function TambahProdukScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(owner)/produk')} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={24} color={C.textDark} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Tambah Produk</Text>

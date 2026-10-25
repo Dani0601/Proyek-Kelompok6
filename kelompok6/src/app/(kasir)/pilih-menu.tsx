@@ -55,7 +55,7 @@ export default function PilihMenuScreen() {
     return produkList.filter((p) => cocokKategori(p, kategori) && (!q || p.nama.toLowerCase().includes(q)));
   }, [produkList, query, kategori]);
 
-  const keTransaksi = () => router.navigate('/(kasir)/transaksi');
+  const keTransaksi = () => router.push('/(kasir)/transaksi');
 
   const tambah = (p: Produk, varian: Varian) => {
     const hasil = ubahQty(p.id, varian, 1);

@@ -51,7 +51,7 @@ export default function TransaksiPenjualanScreen() {
     }
   };
 
-  const goToAntrean = () => router.navigate('/(kasir)/kasir');
+  const goToAntrean = () => router.push('/(kasir)/kasir');
 
   const handlePay = () => {
     if (dipesan.length === 0) {

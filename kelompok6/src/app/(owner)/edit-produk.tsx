@@ -124,7 +124,7 @@ function EditForm({ produk }: { produk: Produk }) {
       harga: hasSizes ? { S: Number(hargaS), L: Number(hargaL) } : { single: Number(harga) },
       resep: Object.fromEntries(variants.map((v) => [v, toResep(resep[v] ?? [])])),
     });
-    router.back();
+    router.push('/(owner)/produk');
   };
 
   return (
@@ -132,7 +132,7 @@ function EditForm({ produk }: { produk: Produk }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(owner)/produk')} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={24} color={C.textDark} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Edit Menu</Text>

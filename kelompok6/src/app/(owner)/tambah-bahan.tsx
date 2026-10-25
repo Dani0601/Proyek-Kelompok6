@@ -75,7 +75,7 @@ export default function TambahBahanScreen() {
       });
     }
 
-    router.back();
+    router.push('/(owner)/stok');
   };
 
   return (
@@ -93,7 +93,7 @@ export default function TambahBahanScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => router.push('/(owner)/stok')}
               activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={24} color={StickyMilkColors.textDark} />

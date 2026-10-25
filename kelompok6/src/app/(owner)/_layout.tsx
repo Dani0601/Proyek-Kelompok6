@@ -44,13 +44,15 @@ export default function OwnerTabsLayout() {
       <Tabs.Screen
         name="tambah-produk"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
         name="edit-produk"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
@@ -63,13 +65,15 @@ export default function OwnerTabsLayout() {
       <Tabs.Screen
         name="tambah-bahan"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
         name="stok-masuk"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen

@@ -61,7 +61,7 @@ export default function StokMasukScreen() {
   const handleSimpan = () => {
     if (!selectedBahan || parsedJumlah <= 0) return;
     catatStokMasuk(selectedBahan.id, parsedJumlah, catatan);
-    router.back();
+    router.push('/(owner)/stok');
   };
 
   return (
@@ -79,7 +79,7 @@ export default function StokMasukScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => router.push('/(owner)/stok')}
               activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={24} color={StickyMilkColors.textDark} />

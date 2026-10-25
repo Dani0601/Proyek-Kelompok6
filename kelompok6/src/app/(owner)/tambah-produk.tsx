@@ -163,7 +163,7 @@ function Chip({ text, selected, onPress }: { text: string; selected: boolean; on
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.cream },
-  content: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 36 },
+  content: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 36 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
   backButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',

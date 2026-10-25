@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import PageTemplate from '@/components/templates/PageTemplate';
 const FILTER = ['Hari ini', 'Minggu ini', 'Bulan ini'] as const;
@@ -67,9 +68,11 @@ export default function LaporanScreen() {
   };
 
   return (
-    <PageTemplate style={styles.container}>
-      <Text style={styles.judul}>Riwayat dan Laporan</Text>
-      <Text style={styles.subjudul}>Transaksi terdahulu dan rekap penjualan</Text>
+    <PageTemplate>
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.content}>
+          <Text style={styles.judul}>Riwayat dan Laporan</Text>
+          <Text style={styles.subjudul}>Transaksi terdahulu dan rekap penjualan</Text>
 
       <View style={styles.filterRow}>
         {FILTER.map((f) => (
@@ -128,14 +131,17 @@ export default function LaporanScreen() {
           </View>
         )}
       />
+        </View>
+      </SafeAreaView>
     </PageTemplate>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF6EC', padding: 20, paddingTop: 50 },
-  judul: { fontSize: 22, fontWeight: 'bold', color: '#3B2A1E' },
-  subjudul: { fontSize: 12, color: '#8A7A6B', marginBottom: 14 },
+  safe: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 16 },
+  judul: { fontSize: 26, fontWeight: 'bold', color: '#3B2A1E' },
+  subjudul: { fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 14 },
   filterRow: { flexDirection: 'row', marginBottom: 14 },
   tab: {
     paddingVertical: 8,

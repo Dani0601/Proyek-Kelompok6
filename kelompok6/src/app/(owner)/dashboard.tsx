@@ -130,7 +130,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 },
+  content: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 32 },
 
   header: {
     flexDirection: 'row',

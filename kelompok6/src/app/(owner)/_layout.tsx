@@ -31,14 +31,14 @@ export default function OwnerTabsLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color as string} size={size} />,
         }}
       />
       <Tabs.Screen
         name="produk"
         options={{
           title: 'Produk',
-          tabBarIcon: ({ color, size }) => <Ionicons name="cafe-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="cafe-outline" color={color as string} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -57,7 +57,7 @@ export default function OwnerTabsLayout() {
         name="stok"
         options={{
           title: 'Stok',
-          tabBarIcon: ({ color, size }) => <Ionicons name="archive-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="archive-outline" color={color as string} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -76,14 +76,14 @@ export default function OwnerTabsLayout() {
         name="laporan"
         options={{
           title: 'Laporan',
-          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" color={color as string} size={size} />,
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color as string} size={size} />,
         }}
       />
     </Tabs>

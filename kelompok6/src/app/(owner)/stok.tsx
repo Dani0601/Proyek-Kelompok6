@@ -150,7 +150,7 @@ export default function StokScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 40 },
 
   headerRow: {
     flexDirection: 'row',

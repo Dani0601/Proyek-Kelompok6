@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     backgroundColor: StickyMilkColors.cream,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingHorizontal: 22,
+    paddingTop: 16,
     paddingBottom: 36,
     flexGrow: 1,
   },

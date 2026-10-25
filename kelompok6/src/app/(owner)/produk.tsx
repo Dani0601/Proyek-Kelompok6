@@ -162,12 +162,12 @@ export default function ProdukScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  content: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 },
+  content: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 32 },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   resepButton: { height: 40, paddingHorizontal: 22, borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   resepText: { fontFamily: FONTS.headingSemi, fontSize: 14, color: COLORS.textDark },
-  footer: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16, backgroundColor: COLORS.background },
+  footer: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 16, backgroundColor: COLORS.background },
   title: { fontFamily: FONTS.heading, fontSize: 26, lineHeight: 36, color: COLORS.textDark },
   subtitle: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textMuted, marginBottom: 14 },
 

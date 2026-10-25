@@ -134,7 +134,7 @@ export default function TransaksiPenjualanScreen() {
 
           {/* Tambah menu: buka layar Pilih Menu */}
           <AppButton
-            onPress={() => router.navigate('/(kasir)/pilih-menu')}
+            onPress={() => router.push('/(kasir)/pilih-menu')}
             accessibilityLabel="Tambah menu"
             style={styles.addMenuBtn}
             textStyle={styles.addMenuText}

@@ -64,8 +64,6 @@ export default function PilihMenuScreen() {
     }
   };
 
-  if (!fontsLoaded) return null;
-
   return (
     <PageTemplate>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -219,17 +217,17 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 16 },
   card: { borderRadius: 22, paddingHorizontal: 15 },
 
-  addRow: { flexDirection: 'row', gap: 6 },
-  addBtn: { width: 41, height: 29, borderRadius: DesignTokens.radius.pill },
-  addBtnWide: { width: 78 },
+  addRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  addBtn: { minWidth: 48, height: 34, paddingHorizontal: 12, borderRadius: DesignTokens.radius.pill },
+  addBtnWide: { minWidth: 84 },
   addBtnOutline: { borderWidth: 1.5, borderColor: C.primary },
   addBtnFilled: { backgroundColor: C.primary },
   addBtnHabis: { opacity: 0.35 },
-  addText: { fontFamily: FONTS.headingSemi, fontSize: 13 },
+  addText: { fontFamily: FONTS.headingSemi, fontSize: 13, fontWeight: '600' },
 
   empty: { fontFamily: FONTS.body, fontSize: 14, color: C.textMuted, textAlign: 'center', marginTop: 24 },
 
-  footer: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 12 },
-  footerBtn: { height: 50, borderRadius: 25, backgroundColor: C.primary },
-  footerText: { fontFamily: FONTS.heading, fontSize: 16, color: C.white },
+  footer: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: 16 },
+  footerBtn: { height: 52, borderRadius: 26, backgroundColor: C.primary },
+  footerText: { fontFamily: FONTS.heading, fontSize: 16, color: C.white, fontWeight: '700' },
 });

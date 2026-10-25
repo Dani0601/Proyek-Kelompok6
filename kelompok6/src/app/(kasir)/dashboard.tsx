@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 const ANTREAN_AKTIF = [
@@ -20,7 +21,8 @@ export default function DashboardKasir() {
   const menunggu = ANTREAN_AKTIF.filter((a) => a.status === 'Menunggu').length;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View>
           <Text style={styles.sapaan}>Halo, Kasir 👋</Text>
@@ -75,18 +77,21 @@ export default function DashboardKasir() {
           </View>
         );
       })}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF6EC', padding: 20, paddingTop: 50 },
+  safe: { flex: 1, backgroundColor: '#FFF6EC' },
+  container: { flex: 1 },
+  content: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 32 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sapaan: { fontSize: 12, color: '#8A7A6B' },
-  judul: { fontSize: 22, fontWeight: 'bold', color: '#3B2A1E' },
-  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F3E3D3', alignItems: 'center', justifyContent: 'center' },
+  judul: { fontSize: 26, fontWeight: 'bold', color: '#3B2A1E' },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3E3D3', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: 'bold', color: '#8B5A3C' },
-  kartuTotal: { backgroundColor: '#8B5A3C', borderRadius: 20, padding: 18, marginBottom: 12 },
+  kartuTotal: { backgroundColor: '#8B5A3C', borderRadius: 20, padding: 18, marginBottom: 14 },
   totalLabel: { color: '#F3E3D3', fontSize: 12 },
   totalAngka: { color: '#FFFFFF', fontSize: 28, fontWeight: 'bold', marginTop: 4 },
   rowKotak: { flexDirection: 'row', gap: 12, marginBottom: 14 },
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
   kotakAngka: { fontSize: 20, fontWeight: 'bold', color: '#3B2A1E', marginTop: 2 },
   tombolBaru: { backgroundColor: '#8B5A3C', borderRadius: 24, paddingVertical: 14, alignItems: 'center', marginBottom: 18 },
   tombolBaruText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
-  headerAntrean: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  headerAntrean: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   antreanJudul: { fontSize: 15, fontWeight: 'bold', color: '#3B2A1E' },
   lihatSemua: { fontSize: 12, color: '#C08A5B', fontWeight: '600' },
   kartuAntrean: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, marginBottom: 10 },

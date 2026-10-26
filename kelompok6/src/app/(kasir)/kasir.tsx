@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOrders, type Status } from '@/context/order-context';
 
 import PageTemplate from '@/components/templates/PageTemplate';
+import { StickyMilkFonts } from '@/constants/design-tokens';
 const FILTER: ('Semua' | Status)[] = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
 const WARNA_STATUS: Record<Status, { bg: string; teks: string }> = {
@@ -87,8 +88,8 @@ export default function KasirScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { flex: 1, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 16 },
-  judul: { fontSize: 26, fontWeight: 'bold', color: '#3B2A1E' },
-  subjudul: { fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 16 },
+  judul: { fontFamily: StickyMilkFonts.heading, fontSize: 26, color: '#3B2A1E' },
+  subjudul: { fontFamily: StickyMilkFonts.body, fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 16 },
   filterRow: { flexDirection: 'row', marginBottom: 16 },
   tab: {
     paddingVertical: 6,
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tabAktif: { backgroundColor: '#8B5A3C' },
-  tabText: { fontSize: 12, color: '#8B5A3C' },
+  tabText: { fontFamily: StickyMilkFonts.bodySemi, fontSize: 12, color: '#8B5A3C' },
   tabTextAktif: { color: '#FFFFFF' },
   kartu: {
     flexDirection: 'row',
@@ -114,8 +115,8 @@ const styles = StyleSheet.create({
     padding: 10,
     marginRight: 12,
   },
-  nomor: { fontWeight: 'bold', color: '#8B5A3C' },
-  produk: { fontSize: 14, fontWeight: '600', color: '#3B2A1E' },
+  nomor: { fontFamily: StickyMilkFonts.headingSemi, color: '#8B5A3C' },
+  produk: { fontFamily: StickyMilkFonts.bodyBold, fontSize: 14, color: '#3B2A1E' },
   badge: {
     alignSelf: 'flex-start',
     paddingVertical: 2,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 4,
   },
-  badgeText: { fontSize: 11, fontWeight: '600' },
+  badgeText: { fontFamily: StickyMilkFonts.bodyBold, fontSize: 11 },
   tombol: {
     backgroundColor: '#8B5A3C',
     paddingVertical: 6,
@@ -131,5 +132,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   tombolNonaktif: { backgroundColor: '#C9B8A8' },
-  tombolText: { color: '#FFFFFF', fontSize: 12 },
+  tombolText: { fontFamily: StickyMilkFonts.headingSemi, color: '#FFFFFF', fontSize: 12 },
 });

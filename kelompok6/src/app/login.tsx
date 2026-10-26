@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AppButton from '@/components/atoms/AppButton';
 import AppInput from '@/components/atoms/AppInput';
+import { StickyMilkFonts } from '@/constants/design-tokens';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -265,12 +266,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   brand: {
-    fontSize: 30,
-    fontWeight: '800',
+    fontFamily: StickyMilkFonts.heading,
+    fontSize: 28,
     color: '#5B3925',
     letterSpacing: 0.5,
   },
   tagline: {
+    fontFamily: StickyMilkFonts.body,
     fontSize: 13,
     color: '#98745C',
     marginTop: 6,
@@ -286,11 +288,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   title: {
-    fontSize: 25,
-    fontWeight: '800',
+    fontFamily: StickyMilkFonts.heading,
+    fontSize: 24,
     color: '#3D2A1F',
   },
   subtitle: {
+    fontFamily: StickyMilkFonts.body,
     fontSize: 14,
     color: '#8A817A',
     lineHeight: 21,
@@ -298,8 +301,8 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   label: {
+    fontFamily: StickyMilkFonts.bodyBold,
     fontSize: 14,
-    fontWeight: '700',
     color: '#4D3A2D',
     marginBottom: 9,
     marginTop: 12,
@@ -324,12 +327,14 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minWidth: 0,
+    fontFamily: StickyMilkFonts.body,
     fontSize: 14,
     color: '#3D2A1F',
     paddingVertical: 14,
     paddingHorizontal: 10,
   },
   errorText: {
+    fontFamily: StickyMilkFonts.body,
     color: '#D93025',
     fontSize: 12,
     marginTop: 6,
@@ -356,9 +361,9 @@ const styles = StyleSheet.create({
     borderColor: '#8B5E3C',
   },
   roleText: {
+    fontFamily: StickyMilkFonts.bodyBold,
     color: '#8B5E3C',
     fontSize: 14,
-    fontWeight: '700',
   },
   roleTextActive: { color: '#FFFFFF' },
   forgotButton: {
@@ -368,8 +373,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   forgotText: {
+    fontFamily: StickyMilkFonts.bodySemi,
     fontSize: 13,
-    fontWeight: '600',
     color: '#8B5E3C',
   },
   loginButton: {
@@ -382,19 +387,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loginButtonText: {
+    fontFamily: StickyMilkFonts.headingSemi,
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
     marginTop: 28,
   },
   footerText: {
+    fontFamily: StickyMilkFonts.body,
     fontSize: 12,
     color: '#8A817A',
   },
   footerBrand: {
+    fontFamily: StickyMilkFonts.bodySemi,
     fontSize: 12,
     color: '#B2A397',
     marginTop: 5,

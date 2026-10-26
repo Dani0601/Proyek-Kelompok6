@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PageTemplate from '@/components/templates/PageTemplate';
+import { StickyMilkFonts } from '@/constants/design-tokens';
 
 const FILTER = ['Hari ini', 'Minggu ini', 'Bulan ini'] as const;
 
@@ -98,8 +99,8 @@ export default function RiwayatScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { flex: 1, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 16 },
-  judul: { fontSize: 26, fontWeight: 'bold', color: '#3B2A1E' },
-  subjudul: { fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 14 },
+  judul: { fontFamily: StickyMilkFonts.heading, fontSize: 26, color: '#3B2A1E' },
+  subjudul: { fontFamily: StickyMilkFonts.body, fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 14 },
   filterRow: { flexDirection: 'row', marginBottom: 14 },
   tab: {
     paddingVertical: 8,
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tabAktif: { backgroundColor: '#8B5A3C', borderColor: '#8B5A3C' },
-  tabText: { fontSize: 12, fontWeight: '600', color: '#8B5A3C' },
+  tabText: { fontFamily: StickyMilkFonts.bodySemi, fontSize: 12, color: '#8B5A3C' },
   tabTextAktif: { color: '#FFFFFF' },
   ringkasan: {
     flexDirection: 'row',
@@ -122,9 +123,9 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
-  ringkasanLabel: { fontSize: 12, color: '#8A7A6B' },
-  ringkasanAngka: { fontSize: 18, fontWeight: 'bold', color: '#8B5A3C' },
-  kosong: { textAlign: 'center', color: '#8A7A6B', marginTop: 20, fontSize: 12 },
+  ringkasanLabel: { fontFamily: StickyMilkFonts.body, fontSize: 12, color: '#8A7A6B' },
+  ringkasanAngka: { fontFamily: StickyMilkFonts.heading, fontSize: 18, color: '#8B5A3C' },
+  kosong: { fontFamily: StickyMilkFonts.body, textAlign: 'center', color: '#8A7A6B', marginTop: 20, fontSize: 12 },
   kartuTrx: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,8 +143,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  trxBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#8B5A3C' },
-  trxProduk: { fontSize: 13, fontWeight: '600', color: '#3B2A1E' },
-  trxWaktu: { fontSize: 11, color: '#8A7A6B', marginTop: 2 },
-  trxTotal: { fontSize: 13, fontWeight: 'bold', color: '#8B5A3C' },
+  trxBadgeText: { fontFamily: StickyMilkFonts.headingSemi, fontSize: 10, color: '#8B5A3C' },
+  trxProduk: { fontFamily: StickyMilkFonts.bodyBold, fontSize: 13, color: '#3B2A1E' },
+  trxWaktu: { fontFamily: StickyMilkFonts.body, fontSize: 11, color: '#8A7A6B', marginTop: 2 },
+  trxTotal: { fontFamily: StickyMilkFonts.headingSemi, fontSize: 13, color: '#8B5A3C' },
 });

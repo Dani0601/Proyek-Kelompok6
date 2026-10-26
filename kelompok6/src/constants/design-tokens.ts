@@ -54,3 +54,11 @@ export const DesignTokens = {
 } as const;
 
 export const StickyMilkColors = DesignTokens.color;
+
+export const StickyMilkFonts = {
+  heading: 'Poppins_700Bold',
+  headingSemi: 'Poppins_600SemiBold',
+  body: 'Nunito_400Regular',
+  bodySemi: 'Nunito_600SemiBold',
+  bodyBold: 'Nunito_700Bold',
+} as const;

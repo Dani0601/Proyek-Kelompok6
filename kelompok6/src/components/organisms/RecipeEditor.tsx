@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DesignTokens } from '@/constants/design-tokens';
 import { useBahan } from '@/context/bahan-context';
+import RecipeRowItemMolecule from '@/components/molecules/RecipeRowItemMolecule';
+import AppButton from '@/components/atoms/AppButton';
 
 const C = DesignTokens.color;
 
@@ -15,7 +15,11 @@ type RecipeEditorProps = {
   onChange: (items: ResepDraft[]) => void;
 };
 
-/** Organism editor resep: daftar bahan per porsi, hapus, dan tambah bahan dari stok. */
+/**
+ * Organism editor resep:
+ * Menggabungkan Molecule (RecipeRowItemMolecule) dan Atom (AppButton)
+ * untuk mengelola daftar bahan, edit kuantiti, hapus, dan pilih bahan dari stok.
+ */
 export default function RecipeEditor({ items, onChange }: RecipeEditorProps) {
   const { bahanList } = useBahan();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -40,36 +44,28 @@ export default function RecipeEditor({ items, onChange }: RecipeEditorProps) {
         const bahan = bahanList.find((b) => b.id === item.bahanId);
         if (!bahan) return null;
         return (
-          <View key={item.bahanId} style={styles.row}>
-            <Text style={styles.name} numberOfLines={1}>{bahan.nama}</Text>
-            <View style={styles.qtyBox}>
-              <TextInput
-                style={styles.qtyInput}
-                value={item.jumlah}
-                onChangeText={(t) => setJumlah(item.bahanId, t)}
-                keyboardType="decimal-pad"
-                maxLength={7}
-                selectTextOnFocus
-                placeholder="0"
-                placeholderTextColor={C.textMuted}
-              />
-              <Text style={styles.unit}>{bahan.satuan}</Text>
-            </View>
-            <TouchableOpacity onPress={() => remove(item.bahanId)} hitSlop={8} activeOpacity={0.7}>
-              <Ionicons name="trash-outline" size={22} color={C.danger} />
-            </TouchableOpacity>
-          </View>
+          <RecipeRowItemMolecule
+            key={item.bahanId}
+            item={{
+              bahanId: item.bahanId,
+              nama: bahan.nama,
+              satuan: bahan.satuan,
+              jumlah: item.jumlah,
+            }}
+            onChangeJumlah={(t) => setJumlah(item.bahanId, t)}
+            onRemove={() => remove(item.bahanId)}
+          />
         );
       })}
 
-      <TouchableOpacity
+      <AppButton
         style={[styles.addButton, available.length === 0 && styles.addButtonDisabled]}
-        activeOpacity={0.7}
         disabled={available.length === 0}
         onPress={() => setPickerVisible(true)}
+        textStyle={styles.addText}
       >
-        <Text style={styles.addText}>+ Tambah bahan</Text>
-      </TouchableOpacity>
+        + Tambah bahan
+      </AppButton>
 
       <Modal visible={pickerVisible} transparent animationType="slide" onRequestClose={() => setPickerVisible(false)}>
         <View style={styles.overlay}>
@@ -92,72 +88,37 @@ export default function RecipeEditor({ items, onChange }: RecipeEditorProps) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.surface,
+  addButton: {
+    paddingVertical: 14,
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-    gap: 10,
-  },
-  name: { flex: 1, minWidth: 0, fontFamily: 'Poppins_600SemiBold', fontSize: 14, color: C.textDark },
-  qtyBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 124,
-    height: 40,
-    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: C.border,
-    backgroundColor: C.cream,
-    paddingHorizontal: 10,
-    overflow: 'hidden',
-  },
-  qtyInput: {
-    flex: 1,
-    minWidth: 0,
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 14,
-    color: C.textDark,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    textAlign: 'right',
-  },
-  unit: { width: 36, marginLeft: 6, fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: C.textMuted },
-  addButton: {
-    height: 52,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: C.primary,
+    backgroundColor: C.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonDisabled: { opacity: 0.4 },
   addText: { fontFamily: 'Poppins_600SemiBold', fontSize: 14, color: C.primary },
-  overlay: { flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: C.cream,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 28,
-    maxHeight: '70%',
+    backgroundColor: C.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 36,
+    maxHeight: '60%',
   },
-  sheetTitle: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: C.textDark, marginBottom: 12 },
+  sheetTitle: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: C.textDark, marginBottom: 14 },
   option: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: C.surface,
-    borderRadius: 14,
-    paddingHorizontal: 16,
     paddingVertical: 14,
-    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
   },
-  optionName: { fontFamily: 'Poppins_600SemiBold', fontSize: 14, color: C.textDark },
+  optionName: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: C.textDark },
   optionUnit: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: C.textMuted },
 });

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  Image,
   StyleSheet,
   Text,
   View,
@@ -10,6 +9,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { DesignTokens } from '@/constants/design-tokens';
+import AppBadge from '@/components/atoms/AppBadge';
+import AppAvatar from '@/components/atoms/AppAvatar';
 
 type ProductCardProps = {
   title: string;
@@ -24,7 +25,7 @@ type ProductCardProps = {
   subtitleStyle?: StyleProp<TextStyle>;
 };
 
-/** Molecule kartu produk untuk daftar produk Owner dan pemilihan item Kasir. */
+/** Molecule kartu produk: menggabungkan Atom (AppAvatar, AppBadge) + teks informasi produk + slot tombol/aksi. */
 export default function ProductCard({
   title,
   subtitle,
@@ -37,16 +38,10 @@ export default function ProductCard({
 }: ProductCardProps) {
   return (
     <View style={[styles.base, style]}>
-      <View style={styles.thumb}>
-        {foto ? (
-          <Image source={foto} style={styles.thumbImage} resizeMode="cover" />
-        ) : (
-          <View style={[styles.thumbInner, { backgroundColor: accent }]} />
-        )}
+      <View style={styles.thumbWrapper}>
+        <AppAvatar foto={foto} accent={accent} size={44} />
         {!!badge && badge > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{badge}</Text>
-          </View>
+          <AppBadge label={badge} style={styles.badgePosition} />
         )}
       </View>
       <View style={styles.info}>
@@ -60,23 +55,34 @@ export default function ProductCard({
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: DesignTokens.color.surface,
-    borderRadius: DesignTokens.radius.lg, paddingHorizontal: DesignTokens.spacing.md,
-    paddingVertical: DesignTokens.spacing.md, gap: DesignTokens.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: DesignTokens.color.surface,
+    borderRadius: DesignTokens.radius.lg,
+    paddingHorizontal: DesignTokens.spacing.md,
+    paddingVertical: DesignTokens.spacing.md,
+    gap: DesignTokens.spacing.md,
   },
-  thumb: {
-    width: 44, height: 44, borderRadius: DesignTokens.radius.md, backgroundColor: DesignTokens.color.thumb,
-    alignItems: 'center', justifyContent: 'center',
+  thumbWrapper: {
+    position: 'relative',
   },
-  thumbImage: { width: '100%', height: '100%', borderRadius: DesignTokens.radius.md },
-  thumbInner: { width: 17, height: 29, borderRadius: 7 },
-  badge: {
-    position: 'absolute', top: -8, right: -8, minWidth: 19, height: 19, borderRadius: 10,
-    paddingHorizontal: 5, backgroundColor: DesignTokens.color.primary,
-    alignItems: 'center', justifyContent: 'center',
+  badgePosition: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
   },
-  badgeText: { color: DesignTokens.color.white, fontSize: 11, fontWeight: '700' },
-  info: { flex: 1, minWidth: 0 },
-  title: { color: DesignTokens.color.text, fontSize: 15, fontWeight: '700' },
-  subtitle: { color: DesignTokens.color.textMuted, fontSize: DesignTokens.typography.bodySmall, marginTop: 3 },
+  info: {
+    flex: 1,
+    minWidth: 0,
+  },
+  title: {
+    color: DesignTokens.color.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  subtitle: {
+    color: DesignTokens.color.textMuted,
+    fontSize: DesignTokens.typography.bodySmall,
+    marginTop: 3,
+  },
 });

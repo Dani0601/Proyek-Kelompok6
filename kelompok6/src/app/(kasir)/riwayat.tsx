@@ -4,48 +4,78 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PageTemplate from '@/components/templates/PageTemplate';
 import { StickyMilkFonts } from '@/constants/design-tokens';
 
-const FILTER = ['Hari ini', 'Minggu ini', 'Bulan ini'] as const;
+type Mode = 'Tanggal' | 'Bulan' | 'Tahun';
+const MODE: Mode[] = ['Tanggal', 'Bulan', 'Tahun'];
 
-type Periode = 'hari' | 'minggu' | 'bulan';
 type Metode = 'Tunai' | 'QRIS';
 type Transaksi = {
   id: string;
   produk: string;
-  waktu: string;
+  tgl: string; // YYYY-MM-DD
+  jam: string;
   metode: Metode;
   total: number;
-  periode: Periode;
 };
-type FilterPeriode = (typeof FILTER)[number];
 
-// 'periode' menentukan transaksi muncul di tab mana:
-// hari   = Hari ini, Minggu ini, Bulan ini
-// minggu = Minggu ini, Bulan ini
-// bulan  = Bulan ini saja
+// Data contoh. Nanti diganti dari data transaksi asli.
 const DATA_TRANSAKSI: Transaksi[] = [
-  { id: 'A-013', produk: 'Redvelvet (S) × 2', waktu: '18 Okt 2026 · 10:41', metode: 'Tunai', total: 18000, periode: 'hari' },
-  { id: 'A-012', produk: 'Durian (L) × 3', waktu: '18 Okt 2026 · 10:32', metode: 'QRIS', total: 51000, periode: 'hari' },
-  { id: 'A-011', produk: 'Matcha (S) × 1', waktu: '18 Okt 2026 · 10:20', metode: 'QRIS', total: 9000, periode: 'hari' },
-  { id: 'A-010', produk: 'Coklat (L) × 2', waktu: '18 Okt 2026 · 10:05', metode: 'Tunai', total: 38000, periode: 'hari' },
-  { id: 'A-009', produk: 'Mangga (L) × 2', waktu: '16 Okt 2026 · 15:12', metode: 'Tunai', total: 42000, periode: 'minggu' },
-  { id: 'A-008', produk: 'Taro (S) × 3', waktu: '15 Okt 2026 · 11:48', metode: 'QRIS', total: 27000, periode: 'minggu' },
-  { id: 'A-007', produk: 'Durian (S) × 1', waktu: '10 Okt 2026 · 09:30', metode: 'Tunai', total: 15000, periode: 'bulan' },
-  { id: 'A-006', produk: 'Coklat (L) × 4', waktu: '03 Okt 2026 · 16:05', metode: 'QRIS', total: 76000, periode: 'bulan' },
+  { id: 'A-013', produk: 'Redvelvet (S) × 2', tgl: '2026-10-18', jam: '10:41', metode: 'Tunai', total: 18000 },
+  { id: 'A-012', produk: 'Durian (L) × 3', tgl: '2026-10-18', jam: '10:32', metode: 'QRIS', total: 51000 },
+  { id: 'A-011', produk: 'Matcha (S) × 1', tgl: '2026-10-18', jam: '10:20', metode: 'QRIS', total: 9000 },
+  { id: 'A-010', produk: 'Coklat (L) × 2', tgl: '2026-10-18', jam: '10:05', metode: 'Tunai', total: 38000 },
+  { id: 'A-009', produk: 'Mangga (L) × 2', tgl: '2026-10-16', jam: '15:12', metode: 'Tunai', total: 42000 },
+  { id: 'A-008', produk: 'Taro (S) × 3', tgl: '2026-10-15', jam: '11:48', metode: 'QRIS', total: 27000 },
+  { id: 'A-007', produk: 'Durian (S) × 1', tgl: '2026-10-10', jam: '09:30', metode: 'Tunai', total: 15000 },
+  { id: 'A-006', produk: 'Coklat (L) × 4', tgl: '2026-10-03', jam: '16:05', metode: 'QRIS', total: 76000 },
+  { id: 'A-005', produk: 'Taro (L) × 2', tgl: '2026-09-20', jam: '13:15', metode: 'Tunai', total: 34000 },
+  { id: 'A-004', produk: 'Durian (L) × 5', tgl: '2025-12-12', jam: '14:00', metode: 'QRIS', total: 85000 },
+];
+
+const NAMA_BULAN = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
 const formatRupiah = (angka: number) =>
   'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-const cocokPeriode = (periode: Periode, filter: FilterPeriode) => {
-  if (filter === 'Hari ini') return periode === 'hari';
-  if (filter === 'Minggu ini') return periode === 'hari' || periode === 'minggu';
-  return true;
-};
+const pad = (n: number) => String(n).padStart(2, '0');
+const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 export default function RiwayatScreen() {
-  const [filter, setFilter] = useState<FilterPeriode>('Hari ini');
+  const [mode, setMode] = useState<Mode>('Tanggal');
+  const [acuan, setAcuan] = useState(new Date(2026, 9, 18));
 
-  const dataTampil = DATA_TRANSAKSI.filter((t) => cocokPeriode(t.periode, filter));
+  const geser = (arah: 1 | -1) => {
+    const d = new Date(acuan);
+    if (mode === 'Tanggal') d.setDate(d.getDate() + arah);
+    else if (mode === 'Bulan') d.setMonth(d.getMonth() + arah, 1);
+    else d.setFullYear(d.getFullYear() + arah, 0, 1);
+    setAcuan(d);
+  };
+
+  const labelPeriode =
+    mode === 'Tanggal'
+      ? `${acuan.getDate()} ${NAMA_BULAN[acuan.getMonth()]} ${acuan.getFullYear()}`
+      : mode === 'Bulan'
+      ? `${NAMA_BULAN[acuan.getMonth()]} ${acuan.getFullYear()}`
+      : `${acuan.getFullYear()}`;
+
+  const cocok = (tgl: string) => {
+    if (mode === 'Tanggal') return tgl === toIso(acuan);
+    if (mode === 'Bulan') return tgl.startsWith(`${acuan.getFullYear()}-${pad(acuan.getMonth() + 1)}`);
+    return tgl.startsWith(`${acuan.getFullYear()}`);
+  };
+
+  const dataTampil = DATA_TRANSAKSI
+    .filter((t) => cocok(t.tgl))
+    .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
+
+  const pendapatan = dataTampil.reduce((j, t) => j + t.total, 0);
+  const jumlah = dataTampil.length;
+  const rataRata = jumlah > 0 ? Math.round(pendapatan / jumlah) : 0;
+  const totalTunai = dataTampil.filter((t) => t.metode === 'Tunai').reduce((j, t) => j + t.total, 0);
+  const totalQris = dataTampil.filter((t) => t.metode === 'QRIS').reduce((j, t) => j + t.total, 0);
 
   return (
     <PageTemplate>
@@ -54,42 +84,69 @@ export default function RiwayatScreen() {
           <Text style={styles.judul}>Riwayat Transaksi</Text>
           <Text style={styles.subjudul}>Daftar transaksi yang sudah diproses</Text>
 
-      <View style={styles.filterRow}>
-        {FILTER.map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.tab, filter === f && styles.tabAktif]}
-            onPress={() => setFilter(f)}
-          >
-            <Text style={[styles.tabText, filter === f && styles.tabTextAktif]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.ringkasan}>
-        <Text style={styles.ringkasanLabel}>Jumlah transaksi</Text>
-        <Text style={styles.ringkasanAngka}>{dataTampil.length}</Text>
-      </View>
-
-      <FlatList
-        data={dataTampil}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.kartuTrx}>
-            <View style={styles.trxBadge}>
-              <Text style={styles.trxBadgeText}>TRX</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trxProduk}>{item.id} · {item.produk}</Text>
-              <Text style={styles.trxWaktu}>{item.waktu} · {item.metode}</Text>
-            </View>
-            <Text style={styles.trxTotal}>{formatRupiah(item.total)}</Text>
+          <View style={styles.filterRow}>
+            {MODE.map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.tab, mode === m && styles.tabAktif]}
+                onPress={() => setMode(m)}
+              >
+                <Text style={[styles.tabText, mode === m && styles.tabTextAktif]}>{m}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.tombolHariIni} onPress={() => setAcuan(new Date())}>
+              <Text style={styles.tombolHariIniText}>Hari ini</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      />
+
+          <View style={styles.pemilih}>
+            <TouchableOpacity style={styles.panah} onPress={() => geser(-1)}>
+              <Text style={styles.panahText}>‹</Text>
+            </TouchableOpacity>
+            <Text style={styles.labelPeriode}>{labelPeriode}</Text>
+            <TouchableOpacity style={styles.panah} onPress={() => geser(1)}>
+              <Text style={styles.panahText}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.kartuTotal}>
+            <Text style={styles.totalLabel}>Pendapatan</Text>
+            <Text style={styles.totalAngka}>{formatRupiah(pendapatan)}</Text>
+            <Text style={styles.totalInfo}>
+              {jumlah} transaksi · rata-rata {formatRupiah(rataRata)}
+            </Text>
+          </View>
+
+          <View style={styles.kartuMetode}>
+            <View>
+              <Text style={styles.metodeLabel}>Tunai</Text>
+              <Text style={styles.metodeAngka}>{formatRupiah(totalTunai)}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.metodeLabel}>QRIS</Text>
+              <Text style={styles.metodeAngka}>{formatRupiah(totalQris)}</Text>
+            </View>
+          </View>
+
+          <FlatList
+            data={dataTampil}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={
+              <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.kartuTrx}>
+                <View style={styles.trxBadge}>
+                  <Text style={styles.trxBadgeText}>TRX</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.trxProduk}>{item.id} · {item.produk}</Text>
+                  <Text style={styles.trxWaktu}>{item.tgl} · {item.jam} · {item.metode}</Text>
+                </View>
+                <Text style={styles.trxTotal}>{formatRupiah(item.total)}</Text>
+              </View>
+            )}
+          />
         </View>
       </SafeAreaView>
     </PageTemplate>
@@ -101,10 +158,10 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 16 },
   judul: { fontFamily: StickyMilkFonts.heading, fontSize: 26, color: '#3B2A1E' },
   subjudul: { fontFamily: StickyMilkFonts.body, fontSize: 13, color: '#8A7A6B', marginTop: 2, marginBottom: 14 },
-  filterRow: { flexDirection: 'row', marginBottom: 14 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   tab: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -114,17 +171,47 @@ const styles = StyleSheet.create({
   tabAktif: { backgroundColor: '#8B5A3C', borderColor: '#8B5A3C' },
   tabText: { fontFamily: StickyMilkFonts.bodySemi, fontSize: 12, color: '#8B5A3C' },
   tabTextAktif: { color: '#FFFFFF' },
-  ringkasan: {
+  tombolHariIni: { marginLeft: 'auto', paddingVertical: 8, paddingHorizontal: 6 },
+  tombolHariIniText: { fontFamily: StickyMilkFonts.bodySemi, fontSize: 12, color: '#C08A5B' },
+  pemilih: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 12,
+  },
+  panah: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3E3D3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  panahText: { fontFamily: StickyMilkFonts.heading, fontSize: 22, color: '#8B5A3C', marginTop: -2 },
+  labelPeriode: { fontFamily: StickyMilkFonts.headingSemi, fontSize: 14, color: '#3B2A1E' },
+  kartuTotal: {
+    backgroundColor: '#8B5A3C',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 12,
+  },
+  totalLabel: { fontFamily: StickyMilkFonts.body, color: '#F3E3D3', fontSize: 12 },
+  totalAngka: { fontFamily: StickyMilkFonts.heading, color: '#FFFFFF', fontSize: 28, marginVertical: 4 },
+  totalInfo: { fontFamily: StickyMilkFonts.body, color: '#F3E3D3', fontSize: 12 },
+  kartuMetode: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 14,
     marginBottom: 16,
   },
-  ringkasanLabel: { fontFamily: StickyMilkFonts.body, fontSize: 12, color: '#8A7A6B' },
-  ringkasanAngka: { fontFamily: StickyMilkFonts.heading, fontSize: 18, color: '#8B5A3C' },
+  metodeLabel: { fontFamily: StickyMilkFonts.body, fontSize: 11, color: '#8A7A6B' },
+  metodeAngka: { fontFamily: StickyMilkFonts.headingSemi, fontSize: 14, color: '#3B2A1E' },
   kosong: { fontFamily: StickyMilkFonts.body, textAlign: 'center', color: '#8A7A6B', marginTop: 20, fontSize: 12 },
   kartuTrx: {
     flexDirection: 'row',

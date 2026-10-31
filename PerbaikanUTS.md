@@ -9,6 +9,10 @@
 ### 1. Satukan form login dan owner
 
 ### 2. Tambahkan Field Nominal harga pada pengadaan stok dan filter stok menipis
+#### Bukti Screenshot Field Nominal harga pada pengadaan stok
+![alt text](field-nominal-harga.png)
+#### Bukti Screenshot Filter stok
+![alt text](filter-stok-menipis.png)
 
 ### 3. Pada Laporan buat Saldo, Pendapatan dan Pengeluaran + Filter tanggal, Bulan dan Tahun.
 

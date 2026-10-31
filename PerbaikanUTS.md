@@ -17,3 +17,5 @@
 ### 3. Pada Laporan buat Saldo, Pendapatan dan Pengeluaran + Filter tanggal, Bulan dan Tahun.
 
 ### 4. Menambahkan cetak struk penjualan (Hasil Konfirmasi ke Owner)
+
+<img src="cetakstruk.gif" width="20%">

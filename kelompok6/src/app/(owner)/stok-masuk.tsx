@@ -40,7 +40,9 @@ export default function StokMasukScreen() {
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [jumlah, setJumlah] = useState('');
+  const [harga, setHarga] = useState('');
   const [catatan, setCatatan] = useState('');
+  const [error, setError] = useState('');
 
   const selectedBahan = useMemo(
     () => bahanList.find((b) => b.id === selectedBahanId) || bahanList[0],
@@ -51,6 +53,8 @@ export default function StokMasukScreen() {
     return parseFloat(jumlah.replace(/\./g, '').replace(/,/g, '')) || 0;
   }, [jumlah]);
 
+  const parsedHarga = Number(harga) || 0;
+
   const stokSetelah = useMemo(() => {
     if (!selectedBahan) return 0;
     return selectedBahan.stok + parsedJumlah;
@@ -59,8 +63,15 @@ export default function StokMasukScreen() {
   if (!fontsLoaded) return null;
 
   const handleSimpan = () => {
-    if (!selectedBahan || parsedJumlah <= 0) return;
-    catatStokMasuk(selectedBahan.id, parsedJumlah, catatan);
+    if (!selectedBahan) return;
+    if (parsedJumlah <= 0) return setError('Jumlah masuk wajib diisi.');
+    if (parsedHarga <= 0) return setError('Nominal harga wajib diisi.');
+
+    catatStokMasuk(selectedBahan.id, parsedJumlah, parsedHarga, catatan);
+    setJumlah('');
+    setHarga('');
+    setCatatan('');
+    setError('');
     router.push('/(owner)/stok');
   };
 
@@ -150,10 +161,27 @@ export default function StokMasukScreen() {
                 placeholderTextColor={StickyMilkColors.textMuted}
                 keyboardType="numeric"
                 value={jumlah}
-                onChangeText={setJumlah}
+                onChangeText={(t) => { setJumlah(t); setError(''); }}
               />
               <Text style={styles.suffixText}>{selectedBahan?.satuan || ''}</Text>
             </View>
+          </View>
+
+          {/* Nominal Harga */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Nominal harga</Text>
+            <View style={styles.inputSuffixWrapper}>
+              <Text style={styles.prefixText}>Rp</Text>
+              <AppInput
+                style={styles.inputWithSuffix}
+                placeholder="0"
+                placeholderTextColor={StickyMilkColors.textMuted}
+                keyboardType="number-pad"
+                value={harga ? fmt(parsedHarga) : ''}
+                onChangeText={(t) => { setHarga(t.replace(/[^0-9]/g, '')); setError(''); }}
+              />
+            </View>
+            <Text style={styles.hint}>Total harga pembelian bahan ini.</Text>
           </View>
 
           {/* Stok Preview Card */}
@@ -190,6 +218,8 @@ export default function StokMasukScreen() {
           </View>
 
           <View style={styles.spacer} />
+
+          {!!error && <Text style={styles.error}>{error}</Text>}
 
           {/* Tombol Simpan */}
           <AppButton style={styles.saveBtn} onPress={handleSimpan}>
@@ -295,6 +325,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 14,
     color: StickyMilkColors.textMuted,
+  },
+  prefixText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: StickyMilkColors.textDark,
+    marginRight: 8,
+  },
+  hint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: StickyMilkColors.textMuted,
+    marginTop: 6,
+  },
+  error: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: StickyMilkColors.danger,
+    textAlign: 'center',
+    marginTop: 12,
   },
   previewCard: {
     backgroundColor: '#FFFFFF',

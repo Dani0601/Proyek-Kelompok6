@@ -32,10 +32,24 @@ const COLORS = {
 
 const fmt = (n: number) => n.toLocaleString('id-ID');
 
+type Filter = 'semua' | 'hampir' | 'menipis';
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'menipis', label: 'Urut menipis' },
+  { key: 'hampir', label: 'Hampir habis' },
+  { key: 'semua', label: 'Semua' },
+];
+
+// Satuan tiap bahan berbeda (ml, gram, pcs), jadi "seberapa menipis" diukur terhadap batas minimumnya.
+// Makin kecil nilainya, makin dekat ke habis.
+const rasioStok = (b: Bahan) => (b.minimum > 0 ? b.stok / b.minimum : b.stok > 0 ? Infinity : 0);
+
 export default function StokScreen() {
   const router = useRouter();
   const { bahanList } = useBahan();
   const [query, setQuery] = useState('');
+  // Tampilan awal: semua bahan, diurutkan dari yang paling mau habis.
+  const [filter, setFilter] = useState<Filter>('menipis');
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -47,8 +61,19 @@ export default function StokScreen() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? bahanList.filter((b: Bahan) => b.nama.toLowerCase().includes(q)) : bahanList;
-  }, [bahanList, query]);
+    let list = q ? bahanList.filter((b: Bahan) => b.nama.toLowerCase().includes(q)) : bahanList;
+
+    if (filter === 'hampir') {
+      list = list.filter((b: Bahan) => b.stok <= b.minimum);
+    } else if (filter === 'menipis') {
+      list = [...list].sort((a: Bahan, b: Bahan) => {
+        const ra = rasioStok(a);
+        const rb = rasioStok(b);
+        return ra === rb ? 0 : ra < rb ? -1 : 1;
+      });
+    }
+    return list;
+  }, [bahanList, query, filter]);
 
   const hampirHabis = useMemo(() => bahanList.filter((b: Bahan) => b.stok <= b.minimum), [bahanList]);
 
@@ -87,6 +112,25 @@ export default function StokScreen() {
             onChangeText={setQuery}
             accessibilityLabel="Cari bahan baku"
           />
+        </View>
+
+        {/* Filter */}
+        <View style={styles.filterRow}>
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.chip, active && styles.chipActive]}
+                activeOpacity={0.8}
+                onPress={() => setFilter(f.key)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Warning Banner */}
@@ -133,7 +177,11 @@ export default function StokScreen() {
         </ProductList>
 
         {filtered.length === 0 && (
-          <Text style={styles.empty}>Bahan tidak ditemukan.</Text>
+          <Text style={styles.empty}>
+            {filter === 'hampir' && !query.trim()
+              ? 'Semua stok masih aman.'
+              : 'Bahan tidak ditemukan.'}
+          </Text>
         )}
 
         {/* Catat Stok Masuk Button */}
@@ -196,6 +244,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     color: COLORS.textDark,
     padding: 0,
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  chip: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  chipActive: {
+    backgroundColor: COLORS.brown,
+    borderColor: COLORS.brown,
+  },
+  chipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.brown,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
   },
 
   warnBanner: {

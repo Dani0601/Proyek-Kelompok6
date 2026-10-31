@@ -16,6 +16,9 @@
 
 ### 3. Pada Laporan buat Saldo, Pendapatan dan Pengeluaran + Filter tanggal, Bulan dan Tahun.
 
+<img src="laporan(owner)-1.gif" width="20%">
+<img src="riwayat(kasir).gif" width="20%">
+
 ### 4. Menambahkan cetak struk penjualan (Hasil Konfirmasi ke Owner)
 
 <img src="cetakstruk.gif" width="20%">

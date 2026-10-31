@@ -15,6 +15,7 @@ import ProductCard from '@/components/molecules/ProductCard';
 import ProductList from '@/components/organisms/ProductList';
 import PageTemplate from '@/components/templates/PageTemplate';
 import { DesignTokens } from '@/constants/design-tokens';
+import { KASIR_AKTIF, type DetailTransaksi } from '@/utils/detail-transaksi';
 import { showAlert } from '@/utils/show-alert';
 
 const C = DesignTokens.color;
@@ -32,7 +33,7 @@ const parseNumber = (str: string) => Number(String(str).replace(/[^0-9]/g, '')) 
 export default function TransaksiPenjualanScreen() {
   const router = useRouter();
   const { nomorBerikutnya, tambahPesanan } = useOrders();
-  const { baris, total, ubahQty, bisaTambah, cekStok, kurangiStok, kosongkan } = useKeranjang();
+  const { baris, total, ubahQty, bisaTambah, cekStok, kurangiStok, kosongkan, simpanDetail } = useKeranjang();
 
   const [fontsLoaded] = useFonts({ Poppins_700Bold, Nunito_400Regular, Nunito_700Bold });
 
@@ -51,8 +52,6 @@ export default function TransaksiPenjualanScreen() {
     }
   };
 
-  const goToAntrean = () => router.push('/(kasir)/kasir');
-
   const handlePay = () => {
     if (dipesan.length === 0) {
       showAlert('Pesanan kosong', 'Tambahkan minimal satu item dulu ya.');
@@ -68,15 +67,33 @@ export default function TransaksiPenjualanScreen() {
       return;
     }
 
+    // catatan transaksi untuk halaman detail (dibuat sebelum keranjang dikosongkan)
+    const detail: DetailTransaksi = {
+      id: nomorBerikutnya,
+      waktu: new Date().toISOString(),
+      kasir: KASIR_AKTIF,
+      metode: method,
+      items: dipesan.map((b) => ({ nama: b.nama, qty: b.qty, harga: b.harga })),
+      subtotal: total,
+      total,
+      uangDiterima: method === 'Tunai' ? received : total,
+      kembalian: method === 'Tunai' ? change : 0,
+      status: 'Selesai',
+    };
+
     kurangiStok(); // stok bahan berkurang sesuai resep, terlihat di stok.tsx owner
     tambahPesanan({
       produk: dipesan.map((b) => `${b.nama} × ${b.qty}`).join(', '),
       metode: method,
     });
+    simpanDetail(detail); // disimpan di context, alamat halaman cukup membawa id
     kosongkan(); // mulai pesanan baru
     setCashReceived('50000'); // ganti '' kalau kasir harus mengetik uang diterima setiap transaksi
 
-    showAlert('Transaksi berhasil', 'Transaksi berhasil ditambahkan', goToAntrean);
+    router.push({
+      pathname: '/(kasir)/detail-transaksi',
+      params: { id: detail.id },
+    });
   };
 
   if (!fontsLoaded) return null;

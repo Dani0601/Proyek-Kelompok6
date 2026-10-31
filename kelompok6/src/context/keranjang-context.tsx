@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 
 import { useBahan } from '@/context/bahan-context';
 import { useProduk, type Produk, type Varian } from '@/context/produk-context';
+import type { DetailTransaksi } from '@/utils/detail-transaksi';
 
 type Line = { key: string; produkId: string; varian: Varian; qty: number };
 
@@ -29,6 +30,10 @@ type KeranjangValue = {
   cekStok: () => string[];
   kurangiStok: () => void;
   kosongkan: () => void;
+  /** Simpan catatan transaksi yang sudah dibayar (untuk halaman Detail Transaksi). */
+  simpanDetail: (detail: DetailTransaksi) => void;
+  /** Cari catatan transaksi berdasarkan nomor antrean, mis. "A-014". */
+  cariDetail: (id: string) => DetailTransaksi | undefined;
 };
 
 const UKURAN: Record<Varian, string | null> = { single: null, S: 'Small', L: 'Large' };
@@ -39,6 +44,7 @@ export function KeranjangProvider({ children }: { children: ReactNode }) {
   const { produkList } = useProduk();
   const { bahanList, updateBahan } = useBahan();
   const [lines, setLines] = useState<Line[]>([]);
+  const [detailList, setDetailList] = useState<DetailTransaksi[]>([]);
 
   // total kebutuhan bahan { bahanId: jumlah } dari resep tiap produk x jumlah
   const kebutuhan = (list: Line[]) => {
@@ -118,9 +124,26 @@ export function KeranjangProvider({ children }: { children: ReactNode }) {
 
   const kosongkan = () => setLines([]);
 
+  const simpanDetail = (detail: DetailTransaksi) =>
+    setDetailList((prev) => [detail, ...prev.filter((d) => d.id !== detail.id)]);
+
+  const cariDetail = (id: string) => detailList.find((d) => d.id === id);
+
   return (
     <KeranjangContext.Provider
-      value={{ baris, jumlahItem, total, qtyProduk, ubahQty, bisaTambah, cekStok, kurangiStok, kosongkan }}
+      value={{
+        baris,
+        jumlahItem,
+        total,
+        qtyProduk,
+        ubahQty,
+        bisaTambah,
+        cekStok,
+        kurangiStok,
+        kosongkan,
+        simpanDetail,
+        cariDetail,
+      }}
     >
       {children}
     </KeranjangContext.Provider>

@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { KeranjangProvider } from '@/context/keranjang-context';
 
 const COLORS = {
   brown: StickyMilkColors.primary,
@@ -15,62 +16,66 @@ const styles = StyleSheet.create({
   tabItem: { paddingVertical: 2 },
 });
 
+// opsi untuk layar yang tidak boleh muncul sebagai tab, dan tanpa tab bar saat dibuka
+const layarTersembunyi = {
+  tabBarButton: () => null,
+  tabBarItemStyle: { display: 'none' as const },
+  tabBarStyle: { display: 'none' as const },
+};
+
 export default function KasirTabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: COLORS.brown,
-        tabBarInactiveTintColor: COLORS.muted,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarItemStyle: styles.tabItem,
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color as string} size={size} />,
+    <KeranjangProvider>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: COLORS.brown,
+          tabBarInactiveTintColor: COLORS.muted,
+          tabBarStyle: styles.tabBar,
+          tabBarLabelStyle: styles.tabLabel,
+          tabBarItemStyle: styles.tabItem,
         }}
-      />
-      <Tabs.Screen
-        name="kasir"
-        options={{
-          title: 'Antrean',
-          tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" color={color as string} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transaksi"
-        options={{
-          title: 'Transaksi',
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color as string} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="riwayat"
-        options={{
-          title: 'Riwayat',
-          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" color={color as string} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profil"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color as string} size={size} />,
-        }}
-      />
+      >
+        <Tabs.Screen
+          name="dashboard"
+          options={{
+            title: 'Dashboard',
+            tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color as string} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="kasir"
+          options={{
+            title: 'Antrean',
+            tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" color={color as string} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="transaksi"
+          options={{
+            title: 'Transaksi',
+            tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color as string} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="riwayat"
+          options={{
+            title: 'Riwayat',
+            tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" color={color as string} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profil"
+          options={{
+            title: 'Profil',
+            tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color as string} size={size} />,
+          }}
+        />
 
-      {/* Layar Pilih Menu: disembunyikan tombol tab-nya tanpa merusak routing */}
-      <Tabs.Screen
-        name="pilih-menu"
-        options={{
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-    </Tabs>
+        {/* Layar tersembunyi (tidak muncul di tab bar) */}
+        <Tabs.Screen name="pilih-menu" options={layarTersembunyi} />
+        <Tabs.Screen name="detail-transaksi" options={layarTersembunyi} />
+      </Tabs>
+    </KeranjangProvider>
   );
 }

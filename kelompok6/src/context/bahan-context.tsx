@@ -17,17 +17,31 @@ const INITIAL_BAHAN: Bahan[] = [
   { id: '6', nama: 'Cup Small 12 oz', satuan: 'pcs', stok: 80, minimum: 100 },
 ];
 
+/** Satu catatan pengadaan stok (stok masuk) beserta nominal harga pembeliannya. */
+export interface StokMasuk {
+  id: string;
+  bahanId: string;
+  jumlah: number;
+  /** Total harga pembelian dalam rupiah. */
+  harga: number;
+  catatan: string;
+  /** Waktu pencatatan (ISO). */
+  tanggal: string;
+}
+
 interface BahanContextType {
   bahanList: Bahan[];
+  riwayatStokMasuk: StokMasuk[];
   tambahBahan: (bahan: Omit<Bahan, 'id'>) => void;
   updateBahan: (id: string, bahan: Partial<Bahan>) => void;
-  catatStokMasuk: (id: string, jumlah: number, catatan?: string) => void;
+  catatStokMasuk: (id: string, jumlah: number, harga: number, catatan?: string) => void;
 }
 
 const BahanContext = createContext<BahanContextType | undefined>(undefined);
 
 export function BahanProvider({ children }: { children: React.ReactNode }) {
   const [bahanList, setBahanList] = useState<Bahan[]>(INITIAL_BAHAN);
+  const [riwayatStokMasuk, setRiwayatStokMasuk] = useState<StokMasuk[]>([]);
 
   const tambahBahan = (bahan: Omit<Bahan, 'id'>) => {
     const newId = (bahanList.length + 1).toString();
@@ -40,16 +54,28 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const catatStokMasuk = (id: string, jumlah: number) => {
+  const catatStokMasuk = (id: string, jumlah: number, harga: number, catatan = '') => {
     setBahanList(prev =>
       prev.map(b => (b.id === id ? { ...b, stok: b.stok + jumlah } : b))
     );
+    setRiwayatStokMasuk(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        bahanId: id,
+        jumlah,
+        harga,
+        catatan: catatan.trim(),
+        tanggal: new Date().toISOString(),
+      },
+    ]);
   };
 
   return (
     <BahanContext.Provider
       value={{
         bahanList,
+        riwayatStokMasuk,
         tambahBahan,
         updateBahan,
         catatStokMasuk,

@@ -6,13 +6,16 @@
   3. Istafty Keva Yuftika
   4. Alfiah Lutfi Sabilah
 
-### 1. Satukan form login dan owner
+### 1. Satukan form login kasir dan owner
+
+<img src="revisi login.gif" width="20%">
 
 ### 2. Tambahkan Field Nominal harga pada pengadaan stok dan filter stok menipis
 #### Bukti Screenshot Field Nominal harga pada pengadaan stok
-![alt text](field-nominal-harga.png)
+<img src="field-nominal-harga.png" width="20%">
+
 #### Bukti Screenshot Filter stok
-![alt text](filter-stok-menipis.png)
+<img src="filter-stok-menipis.png" width="20%">
 
 ### 3. Pada Laporan buat Saldo, Pendapatan dan Pengeluaran + Filter tanggal, Bulan dan Tahun.
 

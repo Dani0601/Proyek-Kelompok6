@@ -16,37 +16,65 @@ import AppButton from '@/components/atoms/AppButton';
 import AppInput from '@/components/atoms/AppInput';
 import { StickyMilkFonts } from '@/constants/design-tokens';
 
+// Data dummy akun (sementara sebelum integrasi backend)
+const DUMMY_USERS = [
+  {
+    username: 'owner',
+    email: 'owner@stickymilk.id',
+    password: 'password123',
+    role: 'owner' as const,
+    route: '/(owner)/dashboard' as const,
+  },
+  {
+    username: 'kasir',
+    email: 'kasir@stickymilk.id',
+    password: 'password123',
+    role: 'kasir' as const,
+    route: '/(kasir)/dashboard' as const,
+  },
+];
+
 export default function LoginScreen() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string; general?: string }>({});
   const [focusedField, setFocusedField] = useState('');
-  const [role, setRole] = useState<'owner' | 'kasir'>('owner');
 
   const handleLogin = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const trimmedIdentifier = identifier.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    const newErrors: { identifier?: string; password?: string; general?: string } = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email atau username wajib diisi.';
+    if (!trimmedIdentifier) {
+      newErrors.identifier = 'Email atau username wajib diisi.';
     }
 
-    if (!password.trim()) {
+    if (!trimmedPassword) {
       newErrors.password = 'Password wajib diisi.';
     }
 
-    setErrors(newErrors);
-
     if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    if (role === 'owner') {
-      router.replace('/(owner)/dashboard');
+    // Validasi dengan data dummy
+    const user = DUMMY_USERS.find(
+      (u) =>
+        (u.email.toLowerCase() === trimmedIdentifier || u.username.toLowerCase() === trimmedIdentifier) &&
+        u.password === trimmedPassword
+    );
+
+    if (user) {
+      setErrors({});
+      router.replace(user.route);
     } else {
-      router.replace('/(kasir)/dashboard');
+      setErrors({
+        general: 'Email/username atau password salah. Silakan coba lagi.',
+      });
     }
   };
 
@@ -78,16 +106,23 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Selamat Datang!</Text>
           <Text style={styles.subtitle}>
-            Masuk untuk mengelola penjualan Sticky Milk.
+            Masuk untuk mengakses sistem kasir & manajemen Sticky Milk.
           </Text>
+
+          {errors.general ? (
+            <View style={styles.generalErrorBanner}>
+              <Ionicons name="alert-circle-outline" size={18} color="#D93025" />
+              <Text style={styles.generalErrorText}>{errors.general}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.label}>Email atau Username</Text>
 
           <View
             style={[
               styles.inputContainer,
-              focusedField === 'email' && styles.inputFocused,
-              errors.email && styles.inputError,
+              focusedField === 'identifier' && styles.inputFocused,
+              (errors.identifier || errors.general) && styles.inputError,
             ]}
           >
             <Ionicons
@@ -100,28 +135,29 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="Masukkan email atau username"
               placeholderTextColor="#A0A0A0"
-              value={email}
+              value={identifier}
               onChangeText={(value: string) => {
-                setEmail(value);
-                if (errors.email) {
+                setIdentifier(value);
+                if (errors.identifier || errors.general) {
                   setErrors((prev) => ({
                     ...prev,
-                    email: '',
+                    identifier: '',
+                    general: '',
                   }));
                 }
               }}
-              onFocus={() => setFocusedField('email')}
+              onFocus={() => setFocusedField('identifier')}
               onBlur={() => setFocusedField('')}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
               accessibilityLabel="Email atau Username"
-              invalid={!!errors.email}
+              invalid={!!errors.identifier}
             />
           </View>
 
-          {errors.email ? (
-            <Text style={styles.errorText}>{errors.email}</Text>
+          {errors.identifier ? (
+            <Text style={styles.errorText}>{errors.identifier}</Text>
           ) : null}
 
           <Text style={styles.label}>Password</Text>
@@ -130,7 +166,7 @@ export default function LoginScreen() {
             style={[
               styles.inputContainer,
               focusedField === 'password' && styles.inputFocused,
-              errors.password && styles.inputError,
+              (errors.password || errors.general) && styles.inputError,
             ]}
           >
             <Ionicons
@@ -146,10 +182,11 @@ export default function LoginScreen() {
               value={password}
               onChangeText={(value: string) => {
                 setPassword(value);
-                if (errors.password) {
+                if (errors.password || errors.general) {
                   setErrors((prev) => ({
                     ...prev,
                     password: '',
+                    general: '',
                   }));
                 }
               }}
@@ -188,36 +225,12 @@ export default function LoginScreen() {
             </Text>
           ) : null}
 
-          <Text style={styles.label}>Masuk sebagai</Text>
-          <View style={styles.roleContainer}>
-            <TouchableOpacity
-              style={[styles.roleOption, role === 'owner' && styles.roleOptionActive]}
-              onPress={() => setRole('owner')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityState={{ selected: role === 'owner' }}
-            >
-              <Ionicons name="storefront-outline" size={18} color={role === 'owner' ? '#FFFFFF' : '#8B5E3C'} />
-              <Text style={[styles.roleText, role === 'owner' && styles.roleTextActive]}>Owner</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roleOption, role === 'kasir' && styles.roleOptionActive]}
-              onPress={() => setRole('kasir')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityState={{ selected: role === 'kasir' }}
-            >
-              <Ionicons name="cart-outline" size={18} color={role === 'kasir' ? '#FFFFFF' : '#8B5E3C'} />
-              <Text style={[styles.roleText, role === 'kasir' && styles.roleTextActive]}>Kasir</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity
             style={styles.forgotButton}
             onPress={() =>
               Alert.alert(
                 'Lupa Password',
-                'Fitur ini belum tersedia pada versi UTS.'
+                'Fitur ini belum tersedia pada versi UTS. Silakan gunakan kredensial demo.'
               )
             }
           >
@@ -339,33 +352,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6,
   },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 2,
-  },
-  roleOption: {
-    flex: 1,
-    minHeight: 46,
+  generalErrorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FDE8E8',
+    borderColor: '#F8B4B4',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
     gap: 8,
+  },
+  generalErrorText: {
+    flex: 1,
+    fontFamily: StickyMilkFonts.body,
+    fontSize: 13,
+    color: '#D93025',
+  },
+  demoBox: {
+    marginTop: 20,
+    backgroundColor: '#FAF5EE',
+    borderWidth: 1,
+    borderColor: '#EFE3D3',
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+  },
+  demoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  demoTitle: {
+    fontFamily: StickyMilkFonts.bodyBold,
+    fontSize: 12,
+    color: '#8B5E3C',
+  },
+  demoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8DED4',
-    borderRadius: 12,
-    backgroundColor: '#FFFCF9',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  roleOptionActive: {
-    backgroundColor: '#8B5E3C',
-    borderColor: '#8B5E3C',
-  },
-  roleText: {
+  demoItemRole: {
     fontFamily: StickyMilkFonts.bodyBold,
-    color: '#8B5E3C',
-    fontSize: 14,
+    fontSize: 12,
+    color: '#5B3925',
   },
-  roleTextActive: { color: '#FFFFFF' },
+  demoItemCred: {
+    fontFamily: StickyMilkFonts.body,
+    fontSize: 12,
+    color: '#8B5E3C',
+  },
   forgotButton: {
     alignSelf: 'flex-end',
     marginTop: 14,

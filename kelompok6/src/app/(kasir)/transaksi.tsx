@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { Poppins_700Bold } from '@expo-google-fonts/poppins';
@@ -194,16 +194,21 @@ export default function TransaksiPenjualanScreen() {
               <>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Uang diterima</Text>
-                  <AppInput
-                    style={styles.cashInput}
-                    value={cashReceived ? formatRupiah(parseNumber(cashReceived)) : ''}
-                    onChangeText={(t: string) => setCashReceived(String(parseNumber(t)))}
-                    keyboardType="number-pad"
-                    placeholder="Rp 0"
-                    placeholderTextColor={C.textMuted}
-                    selectTextOnFocus
-                    accessibilityLabel="Uang diterima"
-                  />
+                  <View style={styles.cashInputWrapper}>
+                    <Text style={styles.cashPrefix}>Rp</Text>
+                    <TextInput
+                      style={styles.cashInput}
+                      value={cashReceived}
+                      onChangeText={(t) => {
+                        const cleanDigits = t.replace(/[^0-9]/g, '');
+                        setCashReceived(cleanDigits);
+                      }}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={C.textMuted}
+                      accessibilityLabel="Uang diterima"
+                    />
+                  </View>
                 </View>
                 {received >= total && total > 0 && (
                   <View style={styles.summaryRow}>
@@ -283,13 +288,32 @@ const styles = StyleSheet.create({
   summaryLabel: { fontFamily: FONTS.body, fontSize: 15, color: C.textMuted, flexShrink: 1, paddingRight: 8 },
   summaryValue: { fontFamily: FONTS.body, fontSize: 15, color: C.text },
   divider: { borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.border, marginVertical: 10 },
-  cashInput: {
+  cashInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: 140,
+    backgroundColor: '#FAF5EE',
+    borderWidth: 1.5,
+    borderColor: '#E8DED4',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  cashPrefix: {
     fontFamily: FONTS.bodyBold,
     fontSize: 15,
-    color: C.text,
+    color: C.primary,
+    marginRight: 4,
+  },
+  cashInput: {
+    flex: 1,
+    fontFamily: FONTS.bodyBold,
+    fontSize: 16,
+    color: '#3A2418',
     textAlign: 'right',
-    minWidth: 110,
     paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   totalRow: { marginTop: 6, marginBottom: 0, alignItems: 'baseline' },
   totalLabel: { fontFamily: FONTS.heading, fontSize: 17, color: C.text },

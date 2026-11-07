@@ -1,15 +1,27 @@
-import { useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
 
 import { DesignTokens } from '@/constants/design-tokens';
-import { priceLabel, useProduk, type Produk } from '@/context/produk-context';
+import { priceLabel, useProduk, type Kategori, type Produk } from '@/context/produk-context';
 
 const COLORS = {
   background: DesignTokens.color.cream,
@@ -34,7 +46,7 @@ const FONTS = {
 
 export default function ProdukScreen() {
   const router = useRouter();
-  const { produkList, hapusProduk } = useProduk();
+  const { produkList, hapusProduk, refresh, memuat } = useProduk();
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -45,17 +57,33 @@ export default function ProdukScreen() {
   });
 
   const [query, setQuery] = useState('');
+  const [kategoriFilter, setKategoriFilter] = useState<'Semua' | Kategori>('Semua');
   const [deleteTarget, setDeleteTarget] = useState<Produk | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return produkList;
-    return produkList.filter((p) => p.nama.toLowerCase().includes(q));
-  }, [produkList, query]);
+    return produkList.filter((p) => {
+      const matchQuery = !q || p.nama.toLowerCase().includes(q);
+      const matchKategori = kategoriFilter === 'Semua' || p.kategori === kategoriFilter;
+      return matchQuery && matchKategori;
+    });
+  }, [produkList, query, kategoriFilter]);
 
-  const confirmDelete = () => {
-    if (deleteTarget) hapusProduk(deleteTarget.id);
-    setDeleteTarget(null);
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await hapusProduk(deleteTarget.id);
+    } catch (e) {
+      Alert.alert('Gagal menghapus', e instanceof Error ? e.message : 'Terjadi kesalahan.');
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   if (!fontsLoaded) return null;
@@ -81,6 +109,28 @@ export default function ProdukScreen() {
             onChangeText={setQuery}
           />
         </View>
+
+        {/* Chip filter kategori */}
+        <View style={styles.filterRow}>
+          {(['Semua', 'Minuman', 'Topping'] as const).map((kat) => {
+            const active = kategoriFilter === kat;
+            return (
+              <TouchableOpacity
+                key={kat}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setKategoriFilter(kat)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{kat}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Indikator loading */}
+        {memuat && produkList.length === 0 && (
+          <ActivityIndicator size="large" color={COLORS.brown} style={{ marginVertical: 20 }} />
+        )}
 
         {/* Daftar produk */}
         {filtered.map((item) => (
@@ -111,7 +161,7 @@ export default function ProdukScreen() {
           </Pressable>
         ))}
 
-        {filtered.length === 0 && (
+        {!memuat && filtered.length === 0 && (
           <Text style={styles.empty}>
             {produkList.length === 0 ? 'Belum ada produk. Tekan "+ Tambah Produk" untuk mulai.' : 'Produk tidak ditemukan.'}
           </Text>
@@ -174,6 +224,32 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   searchInput: { flex: 1, marginLeft: 12, fontFamily: FONTS.body, fontSize: 15, color: COLORS.textDark, padding: 0 },
+
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 18,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.brown,
+    borderColor: COLORS.brown,
+  },
+  filterChipText: {
+    fontFamily: FONTS.headingSemi,
+    fontSize: 13,
+    color: COLORS.textDark,
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
 
   card: {
     flexDirection: 'row',

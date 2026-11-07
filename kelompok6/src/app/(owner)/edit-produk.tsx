@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, type ImageSourcePropType, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  KeyboardAvoidingView,
+  type ImageSourcePropType,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -68,6 +78,32 @@ function EditForm({ produk }: { produk: Produk }) {
   }));
   const [error, setError] = useState('');
 
+  // State + helper validasi realtime di EditForm (pola yang sama dengan TambahProdukScreen).
+  const [menyimpan, setMenyimpan] = useState(false);
+  const [errors, setErrors] = useState<{ nama?: string; harga?: string; hargaS?: string; hargaL?: string }>({});
+  const [touched, setTouched] = useState<{ nama?: boolean; harga?: boolean; hargaS?: boolean; hargaL?: boolean }>({});
+
+  const tandaiSentuh = (k: 'nama' | 'harga' | 'hargaS' | 'hargaL') => setTouched((t) => ({ ...t, [k]: true }));
+
+  const validasiHarga = (v: string, label: string) => {
+    if (!v.trim()) return `${label} wajib diisi.`;
+    const n = Number(v);
+    if (Number.isNaN(n) || n <= 0) return `${label} harus lebih dari 0.`;
+    return undefined;
+  };
+
+  const validasiSemua = () => ({
+    nama: !nama.trim() ? 'Nama produk wajib diisi.' : undefined,
+    harga: !hasSizes ? validasiHarga(harga, 'Harga') : undefined,
+    hargaS: hasSizes ? validasiHarga(hargaS, 'Harga Small') : undefined,
+    hargaL: hasSizes ? validasiHarga(hargaL, 'Harga Large') : undefined,
+  });
+
+  const resepValid = variants.every(
+    (v) => (resep[v] ?? []).length > 0 && (resep[v] ?? []).every((r) => Number(r.jumlah) > 0)
+  );
+  const formValid = Object.values(validasiSemua()).every((e) => !e) && resepValid;
+
   const menuLabel = (v: Varian) => (hasSizes ? `${nama.trim() || produk.nama} · ${VARIAN_LABEL[v]}` : nama.trim() || produk.nama);
 
   const handlePickPhoto = async () => {
@@ -101,30 +137,40 @@ function EditForm({ produk }: { produk: Produk }) {
     setError('');
   };
 
-  const handleSimpan = () => {
-    if (!nama.trim()) return setError('Nama produk wajib diisi.');
-    if (hasSizes) {
-      if (!Number(hargaS) || !Number(hargaL)) return setError('Harga Small dan Large wajib diisi.');
-    } else if (!Number(harga)) {
-      return setError('Harga wajib diisi.');
-    }
+  const handleSimpan = async () => {
+    const e = validasiSemua();
+    setErrors(e);
+    setTouched({ nama: true, harga: true, hargaS: true, hargaL: true });
+    if (Object.values(e).some(Boolean)) return;
 
     for (const v of variants) {
-      if ((resep[v] ?? []).some((r) => !(Number(r.jumlah) > 0))) {
+      const items = resep[v] ?? [];
+      if (items.length === 0) {
+        setSelected(v);
+        return setError(`Resep untuk varian ${VARIAN_LABEL[v]} wajib memiliki minimal 1 bahan.`);
+      }
+      if (items.some((r) => !(Number(r.jumlah) > 0))) {
         setSelected(v);
         return setError(`Isi jumlah untuk semua bahan di resep ${VARIAN_LABEL[v]}.`);
       }
     }
 
-    updateProduk(produk.id, {
-      nama: nama.trim(),
-      kategori,
-      hasSizes,
-      foto,
-      harga: hasSizes ? { S: Number(hargaS), L: Number(hargaL) } : { single: Number(harga) },
-      resep: Object.fromEntries(variants.map((v) => [v, toResep(resep[v] ?? [])])),
-    });
-    router.push('/(owner)/produk');
+    setMenyimpan(true);
+    try {
+      await updateProduk(produk.id, {
+        nama: nama.trim(),
+        kategori,
+        hasSizes,
+        foto,
+        harga: hasSizes ? { S: Number(hargaS), L: Number(hargaL) } : { single: Number(harga) },
+        resep: Object.fromEntries(variants.map((v) => [v, toResep(resep[v] ?? [])])),
+      });
+      router.push('/(owner)/produk');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan.');
+    } finally {
+      setMenyimpan(false);
+    }
   };
 
   return (
@@ -190,15 +236,22 @@ function EditForm({ produk }: { produk: Produk }) {
           )}
 
           <Text style={styles.label}>Nama produk</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, touched.nama && !!errors.nama && { borderColor: C.danger }]}>
             <AppInput
               style={styles.input}
               value={nama}
-              onChangeText={(t) => { setNama(t); setError(''); }}
+              onChangeText={(t) => {
+                setNama(t);
+                setErrors((p) => ({ ...p, nama: !t.trim() ? 'Nama produk wajib diisi.' : undefined }));
+                setError('');
+              }}
+              onBlur={() => tandaiSentuh('nama')}
+              invalid={touched.nama && !!errors.nama}
               placeholder="Nama produk"
               placeholderTextColor={C.textMuted}
             />
           </View>
+          {!!(touched.nama && errors.nama) && <Text style={styles.fieldError}>{errors.nama}</Text>}
 
           <Text style={styles.label}>Kategori</Text>
           <View style={styles.chipsRow}>
@@ -216,14 +269,47 @@ function EditForm({ produk }: { produk: Produk }) {
           {hasSizes ? (
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <PriceField label="Harga Small" value={hargaS} onChangeText={(t) => { setHargaS(t); setError(''); }} />
+                <PriceField
+                  label="Harga Small"
+                  value={hargaS}
+                  onChangeText={(t) => {
+                    setHargaS(t);
+                    setErrors((p) => ({ ...p, hargaS: validasiHarga(t, 'Harga Small') }));
+                    setError('');
+                  }}
+                  invalid={touched.hargaS && !!errors.hargaS}
+                  onBlur={() => tandaiSentuh('hargaS')}
+                  error={touched.hargaS ? errors.hargaS : undefined}
+                />
               </View>
               <View style={{ flex: 1 }}>
-                <PriceField label="Harga Large" value={hargaL} onChangeText={(t) => { setHargaL(t); setError(''); }} />
+                <PriceField
+                  label="Harga Large"
+                  value={hargaL}
+                  onChangeText={(t) => {
+                    setHargaL(t);
+                    setErrors((p) => ({ ...p, hargaL: validasiHarga(t, 'Harga Large') }));
+                    setError('');
+                  }}
+                  invalid={touched.hargaL && !!errors.hargaL}
+                  onBlur={() => tandaiSentuh('hargaL')}
+                  error={touched.hargaL ? errors.hargaL : undefined}
+                />
               </View>
             </View>
           ) : (
-            <PriceField label="Harga" value={harga} onChangeText={(t) => { setHarga(t); setError(''); }} />
+            <PriceField
+              label="Harga"
+              value={harga}
+              onChangeText={(t) => {
+                setHarga(t);
+                setErrors((p) => ({ ...p, harga: validasiHarga(t, 'Harga') }));
+                setError('');
+              }}
+              invalid={touched.harga && !!errors.harga}
+              onBlur={() => tandaiSentuh('harga')}
+              error={touched.harga ? errors.harga : undefined}
+            />
           )}
 
           <Text style={styles.sectionTitle}>Bahan per porsi</Text>
@@ -233,10 +319,14 @@ function EditForm({ produk }: { produk: Produk }) {
           />
           <Text style={styles.note}>Stok bahan akan berkurang otomatis setiap menu ini terjual.</Text>
 
+          {(resep[selected] ?? []).length === 0 && (
+            <Text style={styles.resepWarning}>* Wajib menambahkan minimal 1 bahan baku ke dalam resep.</Text>
+          )}
+
           {!!error && <Text style={styles.error}>{error}</Text>}
 
-          <AppButton style={styles.saveBtn} onPress={handleSimpan}>
-            <Text style={styles.saveBtnText}>Simpan Perubahan</Text>
+          <AppButton style={styles.saveBtn} onPress={handleSimpan} disabled={menyimpan || !formValid}>
+            <Text style={styles.saveBtnText}>{menyimpan ? 'Menyimpan…' : 'Simpan Perubahan'}</Text>
           </AppButton>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -293,9 +383,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, height: 52, justifyContent: 'center', marginBottom: 16,
   },
   input: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: C.textDark },
+  fieldError: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: C.danger, marginBottom: 12, marginLeft: 4 },
   row: { flexDirection: 'row', gap: 12 },
   sectionTitle: { fontFamily: 'Poppins_700Bold', fontSize: 16, color: C.textDark, marginTop: 8, marginBottom: 12 },
-  note: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 10, marginBottom: 24 },
+  note: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 10, marginBottom: 12 },
+  resepWarning: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: C.danger, textAlign: 'center', marginBottom: 12 },
   error: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: C.danger, textAlign: 'center', marginBottom: 12 },
   saveBtn: { height: 54, borderRadius: 27, backgroundColor: C.primary },
   saveBtnText: { fontFamily: 'Poppins_600SemiBold', fontSize: 16, color: '#FFFFFF' },

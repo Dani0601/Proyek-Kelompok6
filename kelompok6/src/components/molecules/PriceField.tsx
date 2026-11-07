@@ -7,6 +7,9 @@ type PriceFieldProps = {
   value: string;
   onChangeText: (text: string) => void;
   placeholderTextColor?: string;
+  invalid?: boolean;
+  onBlur?: () => void;
+  error?: string;
 };
 
 /** Molecule field harga: menggabungkan label text, awalan Rp, dan Atom AppInput untuk angka. */
@@ -15,11 +18,14 @@ export default function PriceField({
   value,
   onChangeText,
   placeholderTextColor = DesignTokens.color.textMuted,
+  invalid,
+  onBlur,
+  error,
 }: PriceFieldProps) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, invalid && styles.inputRowInvalid]}>
         <Text style={styles.prefix}>Rp</Text>
         <AppInput
           style={styles.input}
@@ -28,8 +34,11 @@ export default function PriceField({
           keyboardType="number-pad"
           placeholder="0"
           placeholderTextColor={placeholderTextColor}
+          invalid={invalid}
+          onBlur={onBlur}
         />
       </View>
+      {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 }
@@ -54,6 +63,9 @@ const styles = StyleSheet.create({
     borderColor: DesignTokens.color.border,
     paddingHorizontal: 14,
   },
+  inputRowInvalid: {
+    borderColor: DesignTokens.color.danger,
+  },
   prefix: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
@@ -67,5 +79,11 @@ const styles = StyleSheet.create({
     color: DesignTokens.color.textDark,
     padding: 0,
     borderWidth: 0,
+  },
+  error: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: DesignTokens.color.danger,
+    marginTop: 6,
   },
 });

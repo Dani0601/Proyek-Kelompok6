@@ -1,5 +1,6 @@
 # Laporan Praktikum Pertemuan 9 — Pemrograman Mobile I
-## Media Penyimpanan: CRUD Produk dengan Supabase (Database + Cloud Storage)
+## Media Penyimpanan: CRUD dengan Supabase (Database + Cloud Storage)
+### Studi Kasus: Sistem Informasi Penjualan dan Pengelolaan Stok UMKM Sticky Milk
 
 ---
 
@@ -9,44 +10,32 @@
 - **Pertemuan:** 9 (Media Penyimpanan)
 - **Dosen Pengampu:** Mohamad Firdaus, M.Kom
 - **Tanggal Praktikum:** November 2026
-- **Studi Kasus:** Sistem Informasi Penjualan dan Pengelolaan Stok pada UMKM Sticky Milk
 - **Kelas / Kelompok:** Kelas B / Kelompok 6
-- **Anggota Kelompok:**
-  1. Dani Hidayat
-  2. Dimas Faturohman
-  3. Istafty Keva Yuftika
-  4. Alfiah Lutfi Sabilah
+- **Pembagian Tugas Anggota Kelompok:**
+  1. **Alfiah Lutfi Sabilah:** Modul Utama — CRUD Katalog Produk, Upload Foto Cloud Storage, Validasi Realtime, & Filter Kategori
+  2. **Dimas Faturohman:** Modul Lanjutan 1 — CRUD Master Bahan Baku & Sinkronisasi Stok Realtime
+  3. **Dani Hidayat:** Modul Lanjutan 2 — CRUD Pengadaan Stok Masuk (Belanja Bahan Baku)
+  4. **Istafty Keva Yuftika:** Modul Lanjutan 3 & 4 — CRUD Antrean Pesanan Kasir & CRUD Riwayat Transaksi Penjualan
 
 ---
 
 ## 1. Tujuan dan Capaian Praktikum
 
-Tujuan dari praktikum ini adalah memigrasikan data statis/lokal katalog produk ke layanan backend cloud (BaaS) menggunakan **Supabase**, yang mencakup:
-1. Membangun project Supabase, tabel relational `produk` (dengan dukungan tipe kolom `JSONB`), Cloud Storage bucket `produk`, serta aturan keamanan *Row Level Security* (RLS).
-2. Mengintegrasikan aplikasi React Native / Expo (SDK 58) dengan Supabase via klien terpusat (`@supabase/supabase-js`).
-3. Mengubah `ProdukContext` dari memori lokal menjadi sumber data cloud (CRUD: Create, Read, Update, Delete) tanpa merusak ketergantungan layar lain (layar kasir/pilih menu).
-4. Mengunggah gambar/foto produk ke Supabase Storage menggunakan API File modern (`new File(uri).bytes()`) dan menghapus file yatim secara otomatis saat foto diubah atau produk dihapus.
-5. Menerapkan validasi form secara *realtime* (validasi per-field saat mengetik, pesan error setelah disentuh/blur, dan penonaktifan tombol simpan saat form invalid).
-6. Menjaga konsistensi antarmuka pengguna sesuai standar desain yang sudah ada (`DesignTokens`, font Poppins & Nunito, atom `AppButton` & `AppInput`).
-7. **Fitur Tambahan (Nilai Tambah):** 
-   - Menerapkan chip filter kategori (**Semua**, **Minuman**, **Topping**) pada layar Manajemen Produk Owner.
-   - Menerapkan persistensi draft form tambah produk menggunakan **AsyncStorage** agar input tidak hilang saat navigasi tertutup/berpindah tab.
+Praktikum ini bertujuan memigrasikan penyimpanan data lokal (state in-memory) ke backend cloud berbasis **Supabase** (PostgreSQL Database + Cloud Storage) pada aplikasi UMKM Sticky Milk:
+1. Membangun project Supabase terintegrasi, skema relasional, tabel dengan tipe `JSONB`, bucket Cloud Storage, serta kebijakan keamanan *Row Level Security* (RLS).
+2. Menghubungkan aplikasi React Native + Expo Router (SDK 58) dengan Supabase via klien tunggal terpusat (`@supabase/supabase-js`).
+3. Memindahkan seluruh entitas inti (Produk, Bahan Baku, Stok Masuk, Antrean Pesanan, dan Transaksi) ke cloud database.
+4. Menerapkan manajemen file foto di Supabase Storage dengan API modern `new File(uri).bytes()`, URL publik, serta penghapusan file lama/yatim saat data diupdate atau dihapus.
+5. Menerapkan validasi form secara *realtime* (validasi per-field, visual error setelah blur, penonaktifan tombol simpan saat form invalid, dan validasi wajib adanya resep bahan).
+6. Menerapkan fitur nilai tambah: **Filter Kategori Produk** dan **Auto-Save Draft Form** dengan `AsyncStorage`.
 
 ---
 
-## 2. Batasan dan Ruang Lingkup Sistem
+## 2. Arsitektur Basis Data Cloud (Supabase)
 
-Sesuai arahan modul praktikum:
-- **Yang dipindahkan ke Supabase Cloud:** Katalog data produk (nama, kategori, jenis harga, harga varian, URL foto Cloud Storage, dan resep varian dalam format `JSONB`).
-- **Yang tetap beroperasi secara lokal:** Master bahan dan stok bahan baku (`bahan-context.tsx`), keranjang belanja (`keranjang-context.tsx`), alur pemesanan transaksi kasir, dan autentikasi login.
+Seluruh tabel dilindungi dengan kebijakan Row Level Security (RLS) publik untuk praktikum, serta relasi *foreign key* antar-entitas.
 
----
-
-## 3. Arsitektur Basis Data & Penyimpanan Cloud
-
-### 3.1 Skema Tabel `produk`
-Tabel `produk` dibuat di Supabase dengan skema DDL berikut:
-
+### 2.1 Skema Tabel `produk` (Modul Produk)
 ```sql
 create table produk (
   id uuid primary key default gen_random_uuid(),
@@ -62,185 +51,278 @@ create table produk (
 );
 ```
 
-- Kolom `resep` bertipe `JSONB` menyimpan komposisi bahan per porsi (`{ S: [...], L: [...] }` atau `{ single: [...] }`), sehingga pengurangan stok bahan di kasir tetap berjalan lancar.
-- Kolom `foto_url` menampung tautan publik gambar dari bucket Storage.
+### 2.2 Skema Tabel `bahan` (Modul Master Bahan Baku & Stok)
+```sql
+create table bahan (
+  id text primary key,
+  nama text not null,
+  satuan text not null check (satuan in ('ml', 'gram', 'pcs')),
+  stok numeric not null default 0,
+  minimum numeric not null default 0,
+  created_at timestamptz not null default now()
+);
 
-### 3.2 Cloud Storage Bucket `produk`
-- Bucket bernama `produk` dibuat dengan konfigurasi **Public** agar dapat diakses langsung oleh komponen `<Image />` React Native tanpa otentikasi token rumit.
-- Penamaan file unik diatur dengan format `${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}` untuk mencegah insiden penimpaan file (*duplicate naming collision*).
+-- Seed awal data bahan:
+insert into bahan (id, nama, satuan, stok, minimum) values 
+  ('1', 'Susu UHT', 'ml', 18500, 10000),
+  ('2', 'Bubuk Coklat', 'gram', 1200, 2000),
+  ('3', 'Bubuk Taro', 'gram', 2500, 1500),
+  ('4', 'Keju Parut', 'gram', 800, 1000),
+  ('5', 'Cup Large 22 oz', 'pcs', 150, 100),
+  ('6', 'Cup Small 12 oz', 'pcs', 80, 100);
+```
 
-### 3.3 Kebijakan Row Level Security (RLS)
-RLS diaktifkan pada tabel `produk` dan tabel `storage.objects` dengan kebijakan akses:
-- **Tabel `produk`:** Policy `produk_baca_publik` (SELECT), `produk_tambah_publik` (INSERT), `produk_ubah_publik` (UPDATE), dan `produk_hapus_publik` (DELETE).
-- **Storage bucket `produk`:** Policy `produk_file_baca_publik`, `produk_file_tambah_publik`, `produk_file_ubah_publik`, dan `produk_file_hapus_publik` difilter khusus untuk `bucket_id = 'produk'`.
+### 2.3 Skema Tabel `stok_masuk` (Modul Pengadaan Stok)
+```sql
+create table stok_masuk (
+  id uuid primary key default gen_random_uuid(),
+  bahan_id text not null references bahan(id) on delete cascade,
+  jumlah numeric not null,
+  harga numeric not null,
+  catatan text,
+  tanggal timestamptz not null default now()
+);
+```
 
----
+### 2.4 Skema Tabel `pesanan` (Modul Antrean Kasir)
+```sql
+create table pesanan (
+  id text primary key, -- mis. 'A-010'
+  produk text not null,
+  status text not null default 'Menunggu' check (status in ('Menunggu', 'Diproses', 'Siap')),
+  metode text not null check (metode in ('Tunai', 'QRIS')),
+  created_at timestamptz not null default now()
+);
+```
 
-## 4. Implementasi Kode Program
+### 2.5 Skema Tabel `transaksi` (Modul Riwayat Transaksi & Laporan)
+```sql
+create table transaksi (
+  id text primary key, -- mis. 'TRX-20261107-001'
+  antrean_id text,
+  total numeric not null,
+  bayar numeric not null,
+  kembali numeric not null default 0,
+  metode text not null,
+  items jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+```
 
-Perubahan kode dilakukan pada berkas-berkas berikut:
-
-### 4.1 Klien Supabase (`kelompok6/src/lib/supabase.ts`)
-Menginisialisasi klien Supabase menggunakan konfigurasi `SUPABASE_URL` dan `SUPABASE_ANON_KEY` (mendukung `EXPO_PUBLIC_*` maupun fallback konstan).
-
-### 4.2 Restrukturisasi `ProdukContext` (`kelompok6/src/context/produk-context.tsx`)
-- Menggantikan state array statis dengan query Supabase:
-  - `refresh()`: mengambil data tabel `produk` terurut `created_at`.
-  - `tambahProduk()`: mengunggah foto lokal baru ke bucket `produk`, lalu meng-insert data produk ke Supabase.
-  - `updateProduk()`: memperbarui atribut produk, mengunggah foto baru jika ada perubahan, dan membersihkan file lama dari bucket jika foto diganti/dihapus.
-  - `hapusProduk()`: menghapus baris dari tabel `produk` dan menghapus file foto dari bucket Storage.
-- Menyediakan status `memuat` (*loading state*) untuk antarmuka pengguna.
-
-### 4.3 Upgrade Molecule `PriceField` (`kelompok6/src/components/molecules/PriceField.tsx`)
-- Menambahkan penerusan props `invalid`, `onBlur`, dan `error`.
-- Mengimplementasikan visual error dengan border merah pada container input dan pesan kesalahan di bawah field.
-
-### 4.4 Form Tambah Produk Async, Validasi Realtime & Auto-Save Draft (`kelompok6/src/app/(owner)/tambah-produk.tsx`)
-- Validasi realtime pada field nama dan harga: error hanya muncul setelah field disentuh (`onBlur` / `touched`).
-- **Validasi Resep Wajib:** Validasi bahwa menu wajib memiliki minimal 1 bahan baku (`resep.length > 0`) dan setiap takaran bahan harus lebih dari 0 (`jumlah > 0`). Tombol simpan dinonaktifkan (`disabled`) jika resep belum diisi bahan.
-- Tombol simpan dinonaktifkan (`disabled`) selama form invalid atau saat proses penyimpanan berlangsung (`Menyimpan…`).
-- **Nilai Tambah (AsyncStorage Draft):** Form otomatis memulihkan isian sebelumnya jika user tidak sengaja keluar sebelum menyimpan, dan otomatis menghapus draft saat produk berhasil disimpan.
-
-### 4.5 Manajemen Produk Owner (`kelompok6/src/app/(owner)/produk.tsx`)
-- Menggunakan `useFocusEffect` dari `expo-router` agar katalog selalu termutakhirkan otomatis ketika layar kembali difokuskan.
-- Fungsi hapus produk dibuat `async` dengan konfirmasi dialog dan penanganan galat `Alert.alert`.
-- Menampilkan `ActivityIndicator` warna primer saat data pertama kali dimuat.
-- **Nilai Tambah (Filter Kategori):** Chip filter (**Semua**, **Minuman**, **Topping**) aktif tepat di bawah search bar dan bekerja bersamaan dengan pencarian teks.
-
-### 4.6 Form Edit Produk Async (`kelompok6/src/app/(owner)/edit-produk.tsx`)
-- Menerapkan pola validasi realtime yang sama dengan form tambah.
-- Penanganan cerdas terhadap 3 kemungkinan foto:
-  1. Foto tidak diubah (URL Supabase tetap dipertahankan).
-  2. Foto baru dipilih (foto baru diunggah, foto lama di bucket dihapus).
-  3. Foto dihapus (URL di database dijadikan `null`, file di bucket dihapus).
-
----
-
-## 5. Hasil Uji Coba End-to-End (Kriteria Selesai Langkah 11)
-
-| No | Kriteria Pengujian Sesuai Modul | Status | Keterangan / Indikator Keberhasilan |
-|---|---|---|---|
-| 1 | Uji Koneksi Supabase (Langkah 5.2) | **LOLOS** | Log Metro console menampilkan pesan koneksi berhasil dan jumlah data seed. |
-| 2 | Menampilkan data produk awal database | **LOLOS** | Layar Manajemen Produk menampilkan 5 produk awal dengan aksen warna. |
-| 3 | Tambah produk baru **DENGAN foto** | **LOLOS** | Foto terunggah ke Cloud Storage, data masuk ke DB, dan tampil di daftar. |
-| 4 | Sinkronisasi ke layar kasir | **LOLOS** | Menu kasir (pilih-menu) otomatis menampilkan produk baru berserta fotonya. |
-| 5 | Tambah produk **TANPA foto** | **LOLOS** | Tersimpan dengan `foto_url: null` dan kartu menampilkan warna aksen. |
-| 6 | Ubah data **TANPA ganti foto** | **LOLOS** | Perubahan nama/harga tersimpan, foto lama tetap utuh. |
-| 7 | Ubah data **DENGAN ganti foto** | **LOLOS** | Foto baru terunggah, foto lama di bucket Storage terhapus otomatis. |
-| 8 | Tekan "Hapus foto" di Edit Produk | **LOLOS** | URL foto menjadi null dan file lama di Storage terhapus. |
-| 9 | Hapus produk | **LOLOS** | Baris produk di DB terhapus dan file foto di Storage ikut terhapus. |
-| 10 | Pengurangan stok bahan di kasir | **LOLOS** | Stok bahan berkurang otomatis saat produk terjual (resep JSONB terbaca). |
-| 11 | Uji pembuktian RLS | **LOLOS** | Operasi tolak saat policy dinonaktifkan, dan berhasil saat diaktifkan. |
-| 12 | Persistensi data setelah restart aplikasi | **LOLOS** | Data produk dan foto tetap ada setelah aplikasi ditutup dan dibuka kembali. |
-| 13 | Pencegahan file yatim di Storage | **LOLOS** | Tidak ada file gambar di bucket yang tidak memiliki baris di tabel `produk`. |
-| 14 | UI polish & tombol simpan `Menyimpan…` | **LOLOS** | Tombol nonaktif (opacity 0.5) dengan teks `Menyimpan…` saat proses async. |
-| 15 | Validasi Realtime — Field Nama | **LOLOS** | Mengosongkan nama memicu pesan error setelah blur; tombol simpan disable. |
-| 16 | Validasi Realtime — Field Harga | **LOLOS** | Harga kosong/0 memicu border merah PriceField; form tidak bisa disimpan. |
-| 17 | Validasi Realtime — Submit Form Kosong | **LOLOS** | Menekan simpan pada form kosong menampilkan seluruh error field sekaligus. |
-| 18 | Validasi Resep Bahan Wajib Diisi | **LOLOS** | Menu wajib memiliki minimal 1 bahan baku; tombol simpan disable & muncul pesan peringatan jika resep kosong. |
-| 19 | *(Nilai Tambah)* Filter Kategori Produk | **LOLOS** | Chip filter Semua, Minuman, Topping berfungsi menyaring data secara instan. |
-| 20 | *(Nilai Tambah)* Auto-save Draft AsyncStorage | **LOLOS** | Ketikan form tambah produk tersimpan aman meski layar tertutup sengaja/tidak. |
+### 2.6 Storage Bucket `produk`
+- Bucket publik bernama `produk` untuk foto katalog makanan/minuman.
+- Penamaan file foto terenkripsi timestamp unik: `${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`.
 
 ---
 
-## 6. Dokumentasi Tangkapan Layar (Bukti Pengerjaan)
+## 3. Implementasi Kode Program Berdasarkan Pembagian Tugas
 
-> **Catatan untuk Anggota Tim:**
-> Simpan file tangkapan layar/GIF ke dalam folder proyek (atau folder root), lalu ganti nama file pada atribut `src="..."` di bawah sesuai nama file tangkapan layar Anda.
+### 3.1 Klien Supabase Terpusat (`src/lib/supabase.ts`)
+Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` yang digunakan bersama oleh seluruh context.
 
-### 6.1 Bukti Koneksi & Dashboard Supabase
+### 3.2 Modul 1: CRUD Produk & Cloud Storage — *Alfiah Lutfi Sabilah*
+- **`src/context/produk-context.tsx`**: Pemetaan database `ProdukRow` ➔ `Produk`, fungsi async `tambahProduk`, `updateProduk`, `hapusProduk`, upload foto `bytes()`, pembersihan foto yatim, dan sinkronisasi `refresh()`.
+- **`src/components/molecules/PriceField.tsx`**: Penambahan props `invalid`, `onBlur`, border merah error, dan pesan error di bawah field.
+- **`src/app/(owner)/tambah-produk.tsx`**: Validasi realtime (nama & harga), **validasi resep wajib ada bahan (`resep.length > 0`)**, tombol simpan disabled saat invalid, dan persistensi form draft dengan `AsyncStorage`.
+- **`src/app/(owner)/produk.tsx`**: Hook `useFocusEffect`, loading indicator `ActivityIndicator`, hapus produk async, dan **filter chip kategori (Semua, Minuman, Topping)**.
+- **`src/app/(owner)/edit-produk.tsx`**: Validasi realtime, validasi wajib bahan resep pada setiap varian, dan penanganan cerdas 3 status foto.
 
-#### 1. Uji Koneksi Klien di Metro Console
-*(Bukti koneksi berhasil terhubung ke Supabase)*
-<div align="center">
-  <img src="bukti-koneksi-supabase.png" width="55%" alt="Bukti Koneksi Supabase">
-</div>
+### 3.3 Modul 2: CRUD Master Bahan Baku & Stok — *Dimas Faturohman*
+- **`src/context/bahan-context.tsx`**: Migrasi `bahanList` dari memori lokal ke tabel `bahan` Supabase.
+- **Fungsi `updateBahan` async**: Memperbarui stok realtime baik dari layar owner maupun saat terjadi transaksi kasir (`kurangiStok` di `keranjang-context.tsx`).
+- **`src/app/(owner)/stok.tsx` & `tambah-bahan.tsx`**: Menampilkan daftar bahan dari database, filter menipis, serta form tambah/edit bahan yang tersimpan ke Supabase.
 
-#### 2. Tabel `produk` di Table Editor Supabase
-*(Menampilkan baris data produk beserta kolom JSONB `resep` dan `foto_url`)*
-<div align="center">
-  <img src="bukti-table-editor-produk.png" width="70%" alt="Table Editor Supabase">
-</div>
+### 3.4 Modul 3: CRUD Pengadaan Stok Masuk — *Dani Hidayat*
+- **`src/app/(owner)/stok-masuk.tsx`**: Form pencatatan belanja bahan baku ke tabel `stok_masuk`.
+- Mengupdate jumlah stok di tabel `bahan` dan mencatat nominal pengeluaran untuk rekap laporan keuangan owner.
 
-#### 3. Bucket Storage `produk` di Supabase
-*(Menampilkan file foto produk yang terunggah dengan format timestamp unik)*
-<div align="center">
-  <img src="bukti-storage-bucket.png" width="70%" alt="Bucket Storage Supabase">
-</div>
+### 3.5 Modul 4: CRUD Antrean Pesanan Kasir — *Istafty Keva Yuftika*
+- **`src/context/order-context.tsx`**: Mengubah antrean dari array statis `DATA_AWAL` ke tabel `pesanan` Supabase.
+- **`ubahStatus` async**: Memperbarui status pesanan (*Menunggu* ➔ *Diproses* ➔ *Siap*) di database Supabase sehingga kasir dan bagian peracik minuman sinkron realtime.
 
-#### 4. Kebijakan Row Level Security (RLS)
-*(Menampilkan daftar policy publik pada tabel `produk` dan `storage.objects`)*
-<div align="center">
-  <img src="bukti-rls-policies.png" width="70%" alt="Kebijakan RLS">
-</div>
+### 3.6 Modul 5: CRUD Riwayat Transaksi Penjualan — *Istafty Keva & Dimas*
+- **`src/context/keranjang-context.tsx`**: Menyimpan nota penjualan ke tabel `transaksi` Supabase setelah kasir menyelesaikan pembayaran.
+- Layar **Riwayat Transaksi** kasir dan **Laporan Omzet** owner membaca data permanen dari database Supabase.
 
 ---
 
-### 6.2 Bukti Fitur dan Pengujian di Aplikasi (Layar HP / Emulator)
+## 4. Hasil Uji Coba End-to-End (Checklist Capaian)
 
-#### 5. Layar Manajemen Produk Owner (Data Cloud + Filter Kategori)
-*(Menampilkan daftar produk dari Supabase dan fitur filter chip Semua/Minuman/Topping)*
+| No | Modul / Kriteria Pengujian | Penanggung Jawab | Status | Hasil Pengujian |
+|---|---|---|---|---|
+| 1 | Uji Koneksi Supabase | Tim | **LOLOS** | Metro console menampilkan koneksi aktif ke Supabase. |
+| 2 | Seed awal 5 produk dari Supabase | Alfiah | **LOLOS** | Layar Manajemen Produk menampilkan data produk database. |
+| 3 | Tambah produk baru dengan foto | Alfiah | **LOLOS** | Foto masuk ke Storage bucket, data tersimpan di tabel `produk`. |
+| 4 | Sinkronisasi ke menu kasir | Alfiah | **LOLOS** | Produk cloud otomatis tampil di layar kasir lengkap dengan fotonya. |
+| 5 | Tambah produk tanpa foto | Alfiah | **LOLOS** | Tersimpan dengan `foto_url: null`, kartu menampilkan warna aksen. |
+| 6 | Ubah produk tanpa ganti foto | Alfiah | **LOLOS** | Data terupdate, URL foto lama tetap terjaga. |
+| 7 | Ubah produk dengan ganti foto | Alfiah | **LOLOS** | Foto baru terunggah, foto lama di bucket terhapus otomatis. |
+| 8 | Hapus foto via tombol di Edit | Alfiah | **LOLOS** | `foto_url` jadi null, file foto lama di Storage terhapus. |
+| 9 | Hapus produk | Alfiah | **LOLOS** | Baris data DB dan file foto di Storage terhapus bersih. |
+| 10 | Validasi Realtime Nama & Harga | Alfiah | **LOLOS** | Field kosong memicu border merah; tombol simpan disable. |
+| 11 | **Validasi Wajib Resep Bahan** | Alfiah | **LOLOS** | Menu tidak bisa disimpan jika belum menambahkan bahan baku. |
+| 12 | **Fitur Filter Kategori Produk** | Alfiah | **LOLOS** | Chip Semua/Minuman/Topping menyaring tampilan menu secara instan. |
+| 13 | **Fitur Auto-Save Draft Form** | Alfiah | **LOLOS** | Form memulihkan isian draft via AsyncStorage jika navigasi tertutup. |
+| 14 | **CRUD Master Bahan Baku** | Dimas | **LOLOS** | Daftar bahan dibaca dari Supabase; tambah & edit bahan tersimpan permanen. |
+| 15 | **Potong Stok Bahan Otomatis** | Dimas | **LOLOS** | Transaksi produk di kasir memotong stok di tabel `bahan` Supabase. |
+| 16 | **CRUD Pengadaan Stok Masuk** | Dani | **LOLOS** | Form stok masuk menambah stok bahan dan tercatat di tabel `stok_masuk`. |
+| 17 | **CRUD Antrean Pesanan Kasir** | Keva | **LOLOS** | Nomor antrean tersimpan di DB; update status pesanan realtime. |
+| 18 | **CRUD Riwayat Transaksi** | Keva | **LOLOS** | Data transaksi tersimpan permanen di cloud dan tampil di laporan. |
+| 19 | Persistensi Data Cloud | Tim | **LOLOS** | Data seluruh modul tetap utuh setelah aplikasi ditutup dan dibuka ulang. |
+
+---
+
+## 5. Dokumentasi Bukti Pengerjaan (Screenshot & GIF)
+
+> **Petunjuk Anggota Tim:**
+> Simpan file screenshot / GIF ke folder proyek, lalu pastikan nama file sesuai dengan atribut `src="..."` pada setiap bagian di bawah ini.
+
+---
+
+### Bagian A: Bukti Modul Produk & Cloud Storage (*Alfiah Lutfi Sabilah*)
+
+#### A.1 Bukti Koneksi Konsol Metro & Supabase
 <div align="center">
-  <img src="bukti-manajemen-produk.gif" width="30%" alt="Layar Manajemen Produk">
+  <img src="bukti-koneksi-supabase.png" width="60%" alt="Bukti Koneksi Supabase">
 </div>
 
-#### 6. Validasi Realtime Form Tambah Produk
-*(Menampilkan border merah PriceField, error per-field saat blur, dan tombol simpan disabled)*
+#### A.2 Tabel `produk` di Table Editor Supabase
+<div align="center">
+  <img src="bukti-table-editor-produk.png" width="75%" alt="Tabel Produk Supabase">
+</div>
+
+#### A.3 Cloud Storage Bucket `produk`
+<div align="center">
+  <img src="bukti-storage-bucket.png" width="75%" alt="Storage Bucket Produk">
+</div>
+
+#### A.4 Layar Manajemen Produk Owner (Data Cloud + Filter Kategori)
+<div align="center">
+  <img src="bukti-manajemen-produk.gif" width="30%" alt="Manajemen Produk dan Filter Kategori">
+</div>
+
+#### A.5 Validasi Realtime & Validasi Wajib Resep Bahan
 <div align="center">
   <img src="bukti-validasi-realtime.gif" width="30%" alt="Validasi Realtime Form">
 </div>
 
-#### 7. Tambah Produk Baru dengan Foto
-*(Proses pemilihan foto, pengunggahan ke Storage, dan produk muncul di daftar)*
+#### A.6 Tambah Produk dengan Foto Baru
 <div align="center">
   <img src="bukti-tambah-produk.gif" width="30%" alt="Tambah Produk dengan Foto">
 </div>
 
-#### 8. Sinkronisasi Data ke Layar Kasir
-*(Membuktikan produk yang baru ditambahkan langsung tampil di layar kasir dengan foto dari Cloud)*
+#### A.7 Sinkronisasi Produk & Foto Cloud ke Layar Kasir
 <div align="center">
-  <img src="bukti-kasir-sinkron.png" width="30%" alt="Menu Kasir Sinkron">
+  <img src="bukti-kasir-sinkron.png" width="30%" alt="Kasir Sinkron Cloud">
 </div>
 
-#### 9. Pengujian Edit Produk & Hapus Foto
-*(Mengubah harga produk dan menguji tombol 'Hapus foto' / ganti foto)*
+#### A.8 Edit Produk & Pengujian Tombol Hapus Foto
 <div align="center">
   <img src="bukti-edit-produk.gif" width="30%" alt="Edit Produk dan Hapus Foto">
 </div>
 
-#### 10. Pengujian Hapus Produk & Konfirmasi Modal
-*(Dialog modal konfirmasi hapus dan pembuktian data hilang dari daftar serta file terhapus dari bucket)*
+#### A.9 Hapus Produk & Pembersihan Otomatis File di Storage
 <div align="center">
-  <img src="bukti-hapus-produk.gif" width="30%" alt="Hapus Produk">
+  <img src="bukti-hapus-produk.gif" width="30%" alt="Hapus Produk dan File Storage">
 </div>
 
-#### 11. Pengujian Pengurangan Stok Bahan (Resep JSONB di Kasir)
-*(Transaksi di kasir membuktikan stok bahan berkurang otomatis sesuai resep dari Supabase)*
-<div align="center">
-  <img src="bukti-potong-stok-kasir.png" width="30%" alt="Potong Stok Bahan Kasir">
-</div>
-
-#### 12. Fitur Nilai Tambah: Auto-Save Draft Form (AsyncStorage)
-*(Keluar dari form tambah produk, lalu kembali membuka form: isian data tetap ada)*
+#### A.10 Auto-Save Draft Form via AsyncStorage
 <div align="center">
   <img src="bukti-draft-asyncstorage.gif" width="30%" alt="Draft Form AsyncStorage">
 </div>
 
 ---
 
-## 7. Kendala dan Solusi
+### Bagian B: Bukti Modul Master Bahan Baku & Stok (*Dimas Faturohman*)
 
-| Kendala yang Dihadapi | Penyebab | Solusi |
-|---|---|---|
-| Error `new row violates row-level security policy` | RLS aktif namun belum ada policy izin tulis untuk anon key. | Menjalankan query SQL untuk membuat policy INSERT, UPDATE, dan DELETE pada tabel `produk` dan `storage.objects`. |
-| Deprecated API `readAsStringAsync` di Expo SDK 58 | Expo SDK 54+ merekomendasikan API File modern. | Menggunakan API modern `new File(uri).bytes()` yang menghasilkan `Uint8Array` langsung untuk dikirim ke Supabase Storage. |
-| Produk baru tidak langsung muncul setelah simpan | Layar daftar produk tidak re-mount saat kembali dari layar tambah. | Menggunakan hook `useFocusEffect` dari `expo-router` untuk memanggil `refresh()` otomatis setiap kali layar kembali aktif. |
-| Tombol Simpan tetap nonaktif meski input sudah diisi | State error belum di-reset saat nilai input berubah. | Menyesuaikan handler `onChangeText` agar memvalidasi ulang nilai saat user mengetik. |
+#### B.1 Tabel `bahan` di Supabase
+<div align="center">
+  <img src="bukti-table-bahan.png" width="75%" alt="Tabel Bahan di Supabase">
+</div>
+
+#### B.2 Layar Manajemen Stok Bahan Baku (Data dari Supabase)
+<div align="center">
+  <img src="bukti-layar-stok-bahan.png" width="30%" alt="Layar Stok Bahan Owner">
+</div>
+
+#### B.3 Tambah / Edit Bahan Baku
+<div align="center">
+  <img src="bukti-tambah-edit-bahan.gif" width="30%" alt="Tambah atau Edit Bahan Baku">
+</div>
+
+#### B.4 Pemotongan Otomatis Stok Bahan Saat Kasir Checkout
+<div align="center">
+  <img src="bukti-potong-stok-otomatis.gif" width="30%" alt="Stok Bahan Berkurang Otomatis">
+</div>
 
 ---
 
-## 8. Kesimpulan
+### Bagian C: Bukti Modul Pengadaan Stok Masuk (*Dani Hidayat*)
 
-Praktikum Pertemuan 9 berhasil memigrasikan katalog produk UMKM Sticky Milk dari state memori lokal ke layanan backend cloud **Supabase** (PostgreSQL Database dan Cloud Storage). 
+#### C.1 Tabel `stok_masuk` di Supabase
+<div align="center">
+  <img src="bukti-table-stok-masuk.png" width="75%" alt="Tabel Stok Masuk Supabase">
+</div>
 
-Integrasi berjalan mulus tanpa merusak alur aplikasi yang sudah ada, khususnya layar kasir dan pengurangan stok bahan otomatis berkat penyimpanan resep dalam format `JSONB`. Validasi form realtime, penanganan file yatim pada storage, serta fitur nilai tambah berupa **Filter Kategori** dan **Auto-Save Draft (AsyncStorage)** berhasil meningkatkan keandalan (*reliability*) serta kualitas pengalaman pengguna (*user experience*) aplikasi.
+#### C.2 Form Pengadaan Stok Bahan Masuk (`stok-masuk.tsx`)
+<div align="center">
+  <img src="bukti-form-stok-masuk.gif" width="30%" alt="Form Pengadaan Stok Masuk">
+</div>
+
+#### C.3 Riwayat Pengadaan & Bertambahnya Stok Bahan
+<div align="center">
+  <img src="bukti-riwayat-stok-masuk.png" width="30%" alt="Riwayat Pengadaan Bahan">
+</div>
+
+---
+
+### Bagian D: Bukti Modul Antrean Pesanan Kasir (*Istafty Keva Yuftika*)
+
+#### D.1 Tabel `pesanan` di Supabase
+<div align="center">
+  <img src="bukti-table-pesanan.png" width="75%" alt="Tabel Pesanan Kasir di Supabase">
+</div>
+
+#### D.2 Layar Antrean Pesanan Kasir
+<div align="center">
+  <img src="bukti-layar-antrean-kasir.png" width="30%" alt="Layar Antrean Kasir">
+</div>
+
+#### D.3 Pengubahan Status Pesanan (*Menunggu* ➔ *Diproses* ➔ *Siap*)
+<div align="center">
+  <img src="bukti-ubah-status-antrean.gif" width="30%" alt="Ubah Status Antrean Realtime">
+</div>
+
+---
+
+### Bagian E: Bukti Modul Riwayat Transaksi & Laporan (*Istafty Keva & Dimas*)
+
+#### E.1 Tabel `transaksi` di Supabase
+<div align="center">
+  <img src="bukti-table-transaksi.png" width="75%" alt="Tabel Transaksi Supabase">
+</div>
+
+#### E.2 Riwayat Transaksi Kasir & Cetak Struk
+<div align="center">
+  <img src="bukti-riwayat-transaksi.gif" width="30%" alt="Riwayat Transaksi dan Cetak Struk">
+</div>
+
+#### E.3 Laporan Penjualan & Rekap Omzet Owner
+<div align="center">
+  <img src="bukti-laporan-penjualan.png" width="30%" alt="Laporan Penjualan Owner">
+</div>
+
+---
+
+## 6. Kesimpulan
+
+Praktikum Pertemuan 9 telah berhasil memigrasikan seluruh sistem penyimpanan data aplikasi UMKM Sticky Milk dari penyimpanan memori lokal ke layanan backend cloud **Supabase**.
+
+Kolaborasi tim berhasil membagi tanggung jawab ke dalam 5 modul CRUD cloud utama:
+1. **Katalog Produk & Media Storage:** Ditangani oleh Alfiah Lutfi Sabilah, mencakup foto produk, validasi realtime, validasi wajib bahan resep, filter kategori, dan draft AsyncStorage.
+2. **Master Bahan Baku & Stok:** Ditangani oleh Dimas Faturohman, memastikan stok bahan terpotong realtime saat penjualan di kasir.
+3. **Pengadaan Stok Masuk:** Ditangani oleh Dani Hidayat, mencatat riwayat pembelian bahan dan penambahan stok.
+4. **Antrean Pesanan Kasir:** Ditangani oleh Istafty Keva Yuftika, sinkronisasi alur antrean pesanan pelanggan secara realtime.
+5. **Riwayat Transaksi & Laporan:** Ditangani bersama oleh tim, menghasilkan rekaman penjualan permanen dan laporan omzet yang akurat.
+
+Integrasi ini menjadikan aplikasi Sticky Milk memiliki keandalan data yang tinggi, aman berkat aturan Row Level Security (RLS), dan memiliki performa antarmuka yang responsif.

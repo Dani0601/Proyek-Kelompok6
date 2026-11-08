@@ -137,10 +137,10 @@ export default function RiwayatScreen() {
               ListHeaderComponent={
                 gagal ? (
                   <Text style={styles.kosong}>Gagal memuat riwayat. Periksa koneksi internet.</Text>
-                ) : null
+                ) : undefined
               }
               ListEmptyComponent={
-                gagal ? null : <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
+                gagal ? undefined : <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
               }
               renderItem={({ item }) => {
                 const d = new Date(item.waktu);

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 
 import { DesignTokens } from '@/constants/design-tokens';
 import { priceLabel, useProduk, type Kategori, type Produk } from '@/context/produk-context';
+import { supabase } from '@/lib/supabase';
 
 const COLORS = {
   background: DesignTokens.color.cream,
@@ -59,6 +60,17 @@ export default function ProdukScreen() {
   const [query, setQuery] = useState('');
   const [kategoriFilter, setKategoriFilter] = useState<'Semua' | Kategori>('Semua');
   const [deleteTarget, setDeleteTarget] = useState<Produk | null>(null);
+
+  // Uji koneksi Langkah 5.2 ke Supabase (akan tampil di console terminal Metro)
+  useEffect(() => {
+    (async () => {
+      const { error, count } = await supabase
+        .from('produk')
+        .select('id', { count: 'exact', head: true });
+      if (error) console.log('KONEKSI GAGAL:', error.message);
+      else console.log('KONEKSI OK, jumlah produk:', count);
+    })();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

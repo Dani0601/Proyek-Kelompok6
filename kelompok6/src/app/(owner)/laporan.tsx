@@ -205,10 +205,10 @@ export default function LaporanScreen() {
               ListHeaderComponent={
                 gagal ? (
                   <Text style={styles.kosong}>Gagal memuat laporan. Periksa koneksi internet.</Text>
-                ) : null
+                ) : undefined
               }
               ListEmptyComponent={
-                gagal ? null : <Text style={styles.kosong}>Belum ada catatan di periode ini.</Text>
+                gagal ? undefined : <Text style={styles.kosong}>Belum ada catatan di periode ini.</Text>
               }
               renderItem={({ item }) => {
                 const masuk = item.jenis === 'masuk';

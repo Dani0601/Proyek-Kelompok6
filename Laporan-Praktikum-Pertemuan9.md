@@ -267,25 +267,36 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 ### Bagian C: Bukti Modul Transaksi Penjualan & Antrean Kasir (*Dimas Faturohman*)
 
 #### C.1 Pemotongan Otomatis Stok Bahan Saat Kasir Checkout
-<div align="center">
-  <img src="bukti-potong-stok-otomatis.gif" width="30%" alt="Stok Bahan Berkurang Otomatis">
-</div>
+<table>
+  <tr>
+    <td align="center">
+      <img src="bukti-stok-before.png" width="30%" alt="Stok sebelum transaksi">
+    </td>
+    <td align="center">
+      <img src="bukti-stok-after.png" width="30%" alt="Stok sebelum transaksi">
+    </td>
+  </tr>
+</table>
 
 #### C.2 Tabel `pesanan` di Supabase
 <div align="center">
-  <img src="bukti-table-pesanan.png" width="75%" alt="Tabel Pesanan Kasir di Supabase">
+  <img src="bukti-tabel-pesanan.png" width="75%" alt="Tabel Pesanan Kasir di Supabase">
 </div>
 
 #### C.3 Layar Antrean Pesanan Kasir
 <div align="center">
-  <img src="bukti-layar-antrean-kasir.png" width="30%" alt="Layar Antrean Kasir">
+  <img src="bukti-antrean-pesanan.png" width="30%" alt="Layar Antrean Kasir">
 </div>
 
 #### C.4 Pengubahan Status Pesanan (*Menunggu* ➔ *Diproses* ➔ *Siap*)
 <div align="center">
-  <img src="bukti-ubah-status-antrean.gif" width="30%" alt="Ubah Status Antrean Realtime">
+  <img src="bukti-antrean-pesanan.gif" width="30%" alt="Ubah Status Antrean Realtime">
 </div>
 
+#### Bonus (Transaksi Pesanan)
+<div align="center">
+  <img src="bukti-transaksi.gif" width="30%" alt="Ubah Status Antrean Realtime">
+</div>
 ---
 
 ### Bagian D: Bukti Modul Riwayat Transaksi & Laporan (*Istafty Keva Yuftika*)

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
@@ -19,13 +19,15 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import AppButton from '@/components/atoms/AppButton';
 import AppInput from '@/components/atoms/AppInput';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { showConfirm } from '@/utils/show-alert';
 import { useBahan } from '../../context/bahan-context';
 
 const fmt = (n: number) => n.toLocaleString('id-ID');
+const hanyaAngka = (t: string) => t.replace(/[^0-9]/g, '');
 
-export default function StokMasukScreen() {
+function StokMasukForm({ catatanId }: { catatanId?: string }) {
   const router = useRouter();
-  const { bahanList, catatStokMasuk } = useBahan();
+  const { bahanList, riwayatStokMasuk, catatStokMasuk, updateStokMasuk, hapusStokMasuk } = useBahan();
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -35,44 +37,87 @@ export default function StokMasukScreen() {
     Nunito_700Bold,
   });
 
+  // Mode edit: layar dibuka dari Riwayat Pengadaan dengan id catatan
+  const existing = catatanId ? riwayatStokMasuk.find((m) => m.id === catatanId) : undefined;
+  const isEdit = !!existing;
+
   const [selectedBahanId, setSelectedBahanId] = useState(
-    bahanList.length > 0 ? bahanList[0].id : ''
+    existing?.bahanId ?? (bahanList.length > 0 ? bahanList[0].id : '')
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [jumlah, setJumlah] = useState('');
-  const [harga, setHarga] = useState('');
-  const [catatan, setCatatan] = useState('');
+  const [jumlah, setJumlah] = useState(existing ? String(existing.jumlah) : '');
+  const [harga, setHarga] = useState(existing ? String(existing.harga) : '');
+  const [catatan, setCatatan] = useState(existing?.catatan ?? '');
   const [error, setError] = useState('');
+  const [menyimpan, setMenyimpan] = useState(false);
 
   const selectedBahan = useMemo(
-    () => bahanList.find((b) => b.id === selectedBahanId) || bahanList[0],
-    [bahanList, selectedBahanId]
+    () => bahanList.find((b) => b.id === selectedBahanId) || (isEdit ? undefined : bahanList[0]),
+    [bahanList, selectedBahanId, isEdit]
   );
 
-  const parsedJumlah = useMemo(() => {
-    return parseFloat(jumlah.replace(/\./g, '').replace(/,/g, '')) || 0;
-  }, [jumlah]);
-
+  const parsedJumlah = Number(jumlah) || 0;
   const parsedHarga = Number(harga) || 0;
 
   const stokSetelah = useMemo(() => {
     if (!selectedBahan) return 0;
-    return selectedBahan.stok + parsedJumlah;
-  }, [selectedBahan, parsedJumlah]);
+    // Saat edit, jumlah lama sudah ada di stok, jadi yang dihitung hanya selisihnya.
+    const dasar = isEdit && existing ? selectedBahan.stok - existing.jumlah : selectedBahan.stok;
+    return Math.max(0, dasar + parsedJumlah);
+  }, [selectedBahan, parsedJumlah, isEdit, existing]);
+
+  const kembali = () => router.push(isEdit ? '/(owner)/riwayat-stok-masuk' : '/(owner)/stok');
 
   if (!fontsLoaded) return null;
 
-  const handleSimpan = () => {
-    if (!selectedBahan) return;
+  // Dibuka dengan id catatan, tapi catatannya tidak ada (mis. sudah dihapus)
+  if (catatanId && !existing) {
+    return (
+      <SafeAreaView style={styles.notFound} edges={['top']}>
+        <Text style={styles.notFoundText}>Catatan pengadaan tidak ditemukan.</Text>
+        <AppButton style={styles.saveBtn} onPress={() => router.push('/(owner)/riwayat-stok-masuk')}>
+          <Text style={styles.saveBtnText}>Kembali</Text>
+        </AppButton>
+      </SafeAreaView>
+    );
+  }
+
+  const handleSimpan = async () => {
+    if (!selectedBahan) {
+      return setError('Belum ada bahan baku. Tambahkan bahan di menu Stok dulu.');
+    }
     if (parsedJumlah <= 0) return setError('Jumlah masuk wajib diisi.');
     if (parsedHarga <= 0) return setError('Nominal harga wajib diisi.');
 
-    catatStokMasuk(selectedBahan.id, parsedJumlah, parsedHarga, catatan);
-    setJumlah('');
-    setHarga('');
-    setCatatan('');
-    setError('');
-    router.push('/(owner)/stok');
+    setMenyimpan(true);
+    try {
+      if (existing) {
+        await updateStokMasuk(existing.id, { jumlah: parsedJumlah, harga: parsedHarga, catatan });
+      } else {
+        await catatStokMasuk(selectedBahan.id, parsedJumlah, parsedHarga, catatan);
+      }
+      kembali();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menyimpan pengadaan stok.');
+    } finally {
+      setMenyimpan(false);
+    }
+  };
+
+  const handleHapus = () => {
+    if (!existing || !selectedBahan) return;
+    showConfirm(
+      'Hapus catatan pengadaan?',
+      `Stok ${selectedBahan.nama} akan dikurangi ${fmt(existing.jumlah)} ${selectedBahan.satuan}.`,
+      async () => {
+        try {
+          await hapusStokMasuk(existing.id);
+          kembali();
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'Gagal menghapus catatan pengadaan.');
+        }
+      }
+    );
   };
 
   return (
@@ -88,33 +133,37 @@ export default function StokMasukScreen() {
         >
           {/* Header Row */}
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.push('/(owner)/stok')}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={kembali} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={24} color={StickyMilkColors.textDark} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Stok Masuk</Text>
+            <Text style={styles.headerTitle}>{isEdit ? 'Edit Pengadaan' : 'Stok Masuk'}</Text>
           </View>
 
-          {/* Bahan Baku Selector */}
+          {/* Bahan Baku Selector (terkunci saat edit) */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Bahan baku</Text>
             <TouchableOpacity
-              style={styles.dropdownTrigger}
+              style={[styles.dropdownTrigger, isEdit && styles.dropdownLocked]}
               onPress={() => setDropdownOpen(true)}
               activeOpacity={0.8}
+              disabled={isEdit}
             >
               <Text style={styles.dropdownTriggerText}>
                 {selectedBahan?.nama || 'Pilih bahan baku'}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={StickyMilkColors.textDark} />
+              {!isEdit && (
+                <Ionicons name="chevron-down" size={20} color={StickyMilkColors.textDark} />
+              )}
             </TouchableOpacity>
           </View>
 
           {/* Modal Dropdown Selection */}
-          <Modal visible={dropdownOpen} transparent animationType="fade">
+          <Modal
+            visible={dropdownOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setDropdownOpen(false)}
+          >
             <TouchableOpacity
               style={styles.modalOverlay}
               activeOpacity={1}
@@ -122,31 +171,33 @@ export default function StokMasukScreen() {
             >
               <View style={styles.dropdownModalContent}>
                 <Text style={styles.dropdownModalTitle}>Pilih Bahan Baku</Text>
-                {bahanList.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[
-                      styles.dropdownItem,
-                      item.id === selectedBahanId && styles.dropdownItemSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedBahanId(item.id);
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    <Text
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {bahanList.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
                       style={[
-                        styles.dropdownItemText,
-                        item.id === selectedBahanId && styles.dropdownItemTextSelected,
+                        styles.dropdownItem,
+                        item.id === selectedBahanId && styles.dropdownItemSelected,
                       ]}
+                      onPress={() => {
+                        setSelectedBahanId(item.id);
+                        setDropdownOpen(false);
+                      }}
                     >
-                      {item.nama}
-                    </Text>
-                    <Text style={styles.dropdownItemSub}>
-                      ({fmt(item.stok)} {item.satuan})
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          item.id === selectedBahanId && styles.dropdownItemTextSelected,
+                        ]}
+                      >
+                        {item.nama}
+                      </Text>
+                      <Text style={styles.dropdownItemSub}>
+                        ({fmt(item.stok)} {item.satuan})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             </TouchableOpacity>
           </Modal>
@@ -161,7 +212,10 @@ export default function StokMasukScreen() {
                 placeholderTextColor={StickyMilkColors.textMuted}
                 keyboardType="numeric"
                 value={jumlah}
-                onChangeText={(t) => { setJumlah(t); setError(''); }}
+                onChangeText={(t) => {
+                  setJumlah(hanyaAngka(t));
+                  setError('');
+                }}
               />
               <Text style={styles.suffixText}>{selectedBahan?.satuan || ''}</Text>
             </View>
@@ -178,7 +232,10 @@ export default function StokMasukScreen() {
                 placeholderTextColor={StickyMilkColors.textMuted}
                 keyboardType="number-pad"
                 value={harga ? fmt(parsedHarga) : ''}
-                onChangeText={(t) => { setHarga(t.replace(/[^0-9]/g, '')); setError(''); }}
+                onChangeText={(t) => {
+                  setHarga(hanyaAngka(t));
+                  setError('');
+                }}
               />
             </View>
             <Text style={styles.hint}>Total harga pembelian bahan ini.</Text>
@@ -222,13 +279,40 @@ export default function StokMasukScreen() {
           {!!error && <Text style={styles.error}>{error}</Text>}
 
           {/* Tombol Simpan */}
-          <AppButton style={styles.saveBtn} onPress={handleSimpan}>
-            <Text style={styles.saveBtnText}>Simpan</Text>
+          <AppButton style={styles.saveBtn} onPress={handleSimpan} disabled={menyimpan}>
+            <Text style={styles.saveBtnText}>
+              {menyimpan ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Simpan'}
+            </Text>
           </AppButton>
+
+          {/* Tombol Hapus (hanya saat edit) */}
+          {isEdit && (
+            <AppButton style={styles.deleteBtn} onPress={handleHapus} disabled={menyimpan}>
+              <Text style={styles.deleteBtnText}>Hapus Catatan</Text>
+            </AppButton>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+/**
+ * Formulir dibuat ulang setiap kali layar dibuka, supaya isiannya selalu segar
+ * (layar tab tetap hidup di belakang, sehingga state lama bisa terbawa).
+ */
+export default function StokMasukScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [sesi, setSesi] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSesi((s) => s + 1);
+    }, [])
+  );
+
+  const catatanId = id && id.length > 0 ? id : undefined; // id kosong = mode tambah
+  return <StokMasukForm key={`${catatanId ?? 'baru'}-${sesi}`} catatanId={catatanId} />;
 }
 
 const styles = StyleSheet.create({
@@ -285,6 +369,9 @@ const styles = StyleSheet.create({
     borderColor: StickyMilkColors.borderWarm,
     paddingHorizontal: 16,
     height: 52,
+  },
+  dropdownLocked: {
+    backgroundColor: '#F3EDE4',
   },
   dropdownTriggerText: {
     fontFamily: 'Nunito_600SemiBold',
@@ -445,5 +532,33 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  deleteBtn: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: StickyMilkColors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  deleteBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: StickyMilkColors.danger,
+  },
+  notFound: {
+    flex: 1,
+    backgroundColor: StickyMilkColors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  notFoundText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 15,
+    color: StickyMilkColors.textMuted,
+    marginBottom: 16,
   },
 });

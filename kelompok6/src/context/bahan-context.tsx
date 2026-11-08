@@ -9,15 +9,6 @@ export interface Bahan {
   minimum: number;
 }
 
-const INITIAL_BAHAN: Bahan[] = [
-  { id: '1', nama: 'Susu UHT', satuan: 'ml', stok: 18500, minimum: 10000 },
-  { id: '2', nama: 'Bubuk Coklat', satuan: 'gram', stok: 1200, minimum: 2000 },
-  { id: '3', nama: 'Bubuk Taro', satuan: 'gram', stok: 2500, minimum: 1500 },
-  { id: '4', nama: 'Keju Parut', satuan: 'gram', stok: 800, minimum: 1000 },
-  { id: '5', nama: 'Cup Large 22 oz', satuan: 'pcs', stok: 150, minimum: 100 },
-  { id: '6', nama: 'Cup Small 12 oz', satuan: 'pcs', stok: 80, minimum: 100 },
-];
-
 /** Satu catatan pengadaan stok (stok masuk) beserta nominal harga pembeliannya. */
 export interface StokMasuk {
   id: string;
@@ -30,73 +21,98 @@ export interface StokMasuk {
   tanggal: string;
 }
 
+type BahanRow = {
+  id: string;
+  nama: string;
+  satuan: Bahan['satuan'];
+  stok: number | string | null;
+  minimum: number | string | null;
+};
+
 type StokMasukRow = {
   id: string;
   bahan_id: string;
-  jumlah: number;
-  harga: number;
+  jumlah: number | string;
+  harga: number | string;
   catatan: string | null;
   tanggal: string;
+};
+
+const keBahan = (r: BahanRow): Bahan => ({
+  id: String(r.id),
+  nama: r.nama,
+  satuan: r.satuan,
+  stok: Number(r.stok ?? 0),
+  minimum: Number(r.minimum ?? 0),
+});
+
+const keStokMasuk = (m: StokMasukRow): StokMasuk => ({
+  id: m.id,
+  bahanId: m.bahan_id,
+  jumlah: Number(m.jumlah),
+  harga: Number(m.harga),
+  catatan: m.catatan ?? '',
+  tanggal: m.tanggal,
+});
+
+/** Ubah error Supabase menjadi pesan yang mudah dibaca pengguna. */
+const pesanError = (e: { message?: string } | null | undefined, cadangan: string) => {
+  const pesan = e?.message ?? '';
+  if (pesan.includes('Could not find the function')) {
+    return `${cadangan} Fungsi database belum dibuat: jalankan skrip SQL stok di Supabase.`;
+  }
+  return pesan ? `${cadangan} (${pesan})` : cadangan;
 };
 
 interface BahanContextType {
   bahanList: Bahan[];
   riwayatStokMasuk: StokMasuk[];
   memuat: boolean;
+  /** Pesan error terakhir saat memuat data dari Supabase (null jika baik-baik saja). */
+  galat: string | null;
   refreshBahan: () => Promise<void>;
   tambahBahan: (bahan: Omit<Bahan, 'id'>) => Promise<void>;
   updateBahan: (id: string, bahan: Partial<Bahan>) => Promise<void>;
+  hapusBahan: (id: string) => Promise<void>;
   catatStokMasuk: (id: string, jumlah: number, harga: number, catatan?: string) => Promise<void>;
+  updateStokMasuk: (
+    id: string,
+    data: { jumlah: number; harga: number; catatan?: string }
+  ) => Promise<void>;
+  hapusStokMasuk: (id: string) => Promise<void>;
 }
 
 const BahanContext = createContext<BahanContextType | undefined>(undefined);
 
 export function BahanProvider({ children }: { children: React.ReactNode }) {
-  const [bahanList, setBahanList] = useState<Bahan[]>(INITIAL_BAHAN);
+  const [bahanList, setBahanList] = useState<Bahan[]>([]);
   const [riwayatStokMasuk, setRiwayatStokMasuk] = useState<StokMasuk[]>([]);
-  const [memuat, setMemuat] = useState(false);
+  const [memuat, setMemuat] = useState(true);
+  const [galat, setGalat] = useState<string | null>(null);
 
+  /** Baca ulang tabel `bahan` dan `stok_masuk` dari Supabase. */
   const refreshBahan = useCallback(async () => {
+    setMemuat(true);
     try {
-      setMemuat(true);
-      // 1. Fetch bahan dari Supabase
-      const { data: dataBahan, error: errBahan } = await supabase
-        .from('bahan')
-        .select('*')
-        .order('id', { ascending: true });
+      const [resBahan, resMasuk] = await Promise.all([
+        supabase
+          .from('bahan')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true }),
+        supabase.from('stok_masuk').select('*').order('tanggal', { ascending: false }),
+      ]);
 
-      if (!errBahan && dataBahan && dataBahan.length > 0) {
-        setBahanList(
-          dataBahan.map((b: any) => ({
-            id: String(b.id),
-            nama: b.nama,
-            satuan: b.satuan,
-            stok: Number(b.stok ?? 0),
-            minimum: Number(b.minimum ?? 0),
-          }))
-        );
-      }
-
-      // 2. Fetch stok masuk dari Supabase
-      const { data: dataMasuk, error: errMasuk } = await supabase
-        .from('stok_masuk')
-        .select('*')
-        .order('tanggal', { ascending: false });
-
-      if (!errMasuk && dataMasuk) {
-        setRiwayatStokMasuk(
-          (dataMasuk as StokMasukRow[]).map((m) => ({
-            id: m.id,
-            bahanId: m.bahan_id,
-            jumlah: Number(m.jumlah),
-            harga: Number(m.harga),
-            catatan: m.catatan ?? '',
-            tanggal: m.tanggal,
-          }))
-        );
+      const gagal = resBahan.error ?? resMasuk.error;
+      if (gagal) {
+        setGalat(pesanError(gagal, 'Gagal memuat data stok dari Supabase.'));
+      } else {
+        setBahanList(((resBahan.data ?? []) as BahanRow[]).map(keBahan));
+        setRiwayatStokMasuk(((resMasuk.data ?? []) as StokMasukRow[]).map(keStokMasuk));
+        setGalat(null);
       }
     } catch (e) {
-      console.log('Catatan koneksi bahan Supabase (fallback ke lokal):', e);
+      setGalat(pesanError(e as Error, 'Tidak dapat terhubung ke Supabase.'));
     } finally {
       setMemuat(false);
     }
@@ -106,74 +122,83 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
     refreshBahan();
   }, [refreshBahan]);
 
+  // ---------- Master bahan baku (tabel `bahan`) ----------
+
   const tambahBahan = async (bahan: Omit<Bahan, 'id'>) => {
-    const newId = (bahanList.length + 1).toString();
-    const itemBaru: Bahan = { ...bahan, id: newId };
-
-    // Update state optimistik
-    setBahanList((prev) => [...prev, itemBaru]);
-
-    try {
-      const { error } = await supabase.from('bahan').insert({
-        id: newId,
-        nama: bahan.nama,
-        satuan: bahan.satuan,
-        stok: bahan.stok,
-        minimum: bahan.minimum,
-      });
-      if (!error) {
-        await refreshBahan();
-      }
-    } catch {}
+    const { error } = await supabase.from('bahan').insert({
+      id: Date.now().toString(), // unik; tidak bentrok dengan id seed '1'..'6'
+      nama: bahan.nama.trim(),
+      satuan: bahan.satuan,
+      stok: bahan.stok,
+      minimum: bahan.minimum,
+    });
+    if (error) throw new Error(pesanError(error, 'Gagal menambah bahan.'));
+    await refreshBahan();
   };
 
   const updateBahan = async (id: string, updated: Partial<Bahan>) => {
-    // Update state optimistik
-    setBahanList((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...updated } : b))
-    );
+    const payload: Record<string, string | number> = {};
+    if (updated.nama !== undefined) payload.nama = updated.nama.trim();
+    if (updated.satuan !== undefined) payload.satuan = updated.satuan;
+    if (updated.stok !== undefined) payload.stok = updated.stok;
+    if (updated.minimum !== undefined) payload.minimum = updated.minimum;
+    if (Object.keys(payload).length === 0) return;
 
-    try {
-      const payload: Record<string, any> = {};
-      if (updated.nama !== undefined) payload.nama = updated.nama;
-      if (updated.satuan !== undefined) payload.satuan = updated.satuan;
-      if (updated.stok !== undefined) payload.stok = updated.stok;
-      if (updated.minimum !== undefined) payload.minimum = updated.minimum;
+    // Tampilan diperbarui lebih dulu agar terasa cepat (juga dipakai kasir saat memotong stok).
+    const sebelum = bahanList.find((b) => b.id === id);
+    setBahanList((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated } : b)));
 
-      await supabase.from('bahan').update(payload).eq('id', id);
-    } catch {}
+    // .select('id') dipakai supaya update yang diam-diam ditolak RLS (0 baris) ikut terdeteksi.
+    const { data, error } = await supabase.from('bahan').update(payload).eq('id', id).select('id');
+    if (error || !data || data.length === 0) {
+      if (sebelum) setBahanList((prev) => prev.map((b) => (b.id === id ? sebelum : b)));
+      throw new Error(pesanError(error, 'Gagal menyimpan perubahan bahan.'));
+    }
   };
 
+  const hapusBahan = async (id: string) => {
+    const { data, error } = await supabase.from('bahan').delete().eq('id', id).select('id');
+    if (error || !data || data.length === 0) {
+      throw new Error(pesanError(error, 'Gagal menghapus bahan.'));
+    }
+    setBahanList((prev) => prev.filter((b) => b.id !== id));
+    // Riwayat pengadaan bahan ini ikut terhapus di database (on delete cascade).
+    setRiwayatStokMasuk((prev) => prev.filter((m) => m.bahanId !== id));
+  };
+
+  // ---------- Pengadaan stok masuk (tabel `stok_masuk`) ----------
+  // Ditulis lewat fungsi database (RPC) supaya catatan dan perubahan stok terjadi
+  // dalam SATU transaksi: tidak mungkin stok naik tanpa catatan, atau sebaliknya.
+
   const catatStokMasuk = async (id: string, jumlah: number, harga: number, catatan = '') => {
-    const target = bahanList.find((b) => b.id === id);
-    const stokBaru = (target?.stok ?? 0) + jumlah;
+    const { error } = await supabase.rpc('catat_stok_masuk', {
+      p_bahan_id: id,
+      p_jumlah: jumlah,
+      p_harga: harga,
+      p_catatan: catatan.trim() || null,
+    });
+    if (error) throw new Error(pesanError(error, 'Gagal mencatat stok masuk.'));
+    await refreshBahan();
+  };
 
-    // Update state optimistik
-    setBahanList((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, stok: stokBaru } : b))
-    );
-    const masukBaru: StokMasuk = {
-      id: Date.now().toString(),
-      bahanId: id,
-      jumlah,
-      harga,
-      catatan: catatan.trim(),
-      tanggal: new Date().toISOString(),
-    };
-    setRiwayatStokMasuk((prev) => [masukBaru, ...prev]);
+  const updateStokMasuk = async (
+    id: string,
+    data: { jumlah: number; harga: number; catatan?: string }
+  ) => {
+    const { error } = await supabase.rpc('ubah_stok_masuk', {
+      p_id: id,
+      p_jumlah: data.jumlah,
+      p_harga: data.harga,
+      p_catatan: (data.catatan ?? '').trim() || null,
+    });
+    if (error) throw new Error(pesanError(error, 'Gagal mengubah catatan pengadaan.'));
+    await refreshBahan();
+  };
 
-    try {
-      // Update stok di tabel bahan
-      await supabase.from('bahan').update({ stok: stokBaru }).eq('id', id);
-
-      // Simpan catatan di tabel stok_masuk
-      await supabase.from('stok_masuk').insert({
-        bahan_id: id,
-        jumlah,
-        harga,
-        catatan: catatan.trim(),
-      });
-    } catch {}
+  const hapusStokMasuk = async (id: string) => {
+    const { error } = await supabase.rpc('hapus_stok_masuk', { p_id: id });
+    if (error) throw new Error(pesanError(error, 'Gagal menghapus catatan pengadaan.'));
+    await refreshBahan();
   };
 
   return (
@@ -182,10 +207,14 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
         bahanList,
         riwayatStokMasuk,
         memuat,
+        galat,
         refreshBahan,
         tambahBahan,
         updateBahan,
+        hapusBahan,
         catatStokMasuk,
+        updateStokMasuk,
+        hapusStokMasuk,
       }}
     >
       {children}

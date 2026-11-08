@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
@@ -18,14 +19,18 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import AppButton from '@/components/atoms/AppButton';
 import AppInput from '@/components/atoms/AppInput';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { showAlert } from '@/utils/show-alert';
 import { useBahan } from '../../context/bahan-context';
+import { useProduk } from '../../context/produk-context';
 
 const UNITS: Array<'ml' | 'gram' | 'pcs'> = ['ml', 'gram', 'pcs'];
 
-export default function TambahBahanScreen() {
+const hanyaAngka = (t: string) => t.replace(/[^0-9]/g, '');
+
+function BahanForm({ bahanId }: { bahanId?: string }) {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const { bahanList, tambahBahan, updateBahan } = useBahan();
+  const { bahanList, tambahBahan, updateBahan, hapusBahan } = useBahan();
+  const { produkList } = useProduk();
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -35,47 +40,90 @@ export default function TambahBahanScreen() {
     Nunito_700Bold,
   });
 
-  const existingBahan = id ? bahanList.find((b) => b.id === id) : undefined;
+  const existingBahan = bahanId ? bahanList.find((b) => b.id === bahanId) : undefined;
 
-  const [nama, setNama] = useState(existingBahan?.nama || '');
-  const [satuan, setSatuan] = useState<'ml' | 'gram' | 'pcs'>(existingBahan?.satuan || 'ml');
-  const [stok, setStok] = useState(existingBahan ? existingBahan.stok.toString() : '');
-  const [minimum, setMinimum] = useState(existingBahan ? existingBahan.minimum.toString() : '');
-
-  useEffect(() => {
-    if (existingBahan) {
-      setNama(existingBahan.nama);
-      setSatuan(existingBahan.satuan);
-      setStok(existingBahan.stok.toString());
-      setMinimum(existingBahan.minimum.toString());
-    }
-  }, [existingBahan]);
+  const [nama, setNama] = useState(existingBahan?.nama ?? '');
+  const [satuan, setSatuan] = useState<'ml' | 'gram' | 'pcs'>(existingBahan?.satuan ?? 'ml');
+  const [stok, setStok] = useState(existingBahan ? String(existingBahan.stok) : '');
+  const [minimum, setMinimum] = useState(existingBahan ? String(existingBahan.minimum) : '');
+  const [error, setError] = useState('');
+  const [menyimpan, setMenyimpan] = useState(false);
+  const [modalHapusVisible, setModalHapusVisible] = useState(false);
 
   if (!fontsLoaded) return null;
 
-  const handleSimpan = () => {
-    if (!nama.trim()) return;
+  // Dibuka dengan id, tapi bahannya tidak ada (mis. sudah dihapus)
+  if (bahanId && !existingBahan) {
+    return (
+      <SafeAreaView style={styles.notFound} edges={['top']}>
+        <Text style={styles.notFoundText}>Bahan tidak ditemukan.</Text>
+        <AppButton style={styles.saveBtn} onPress={() => router.push('/(owner)/stok')}>
+          <Text style={styles.saveBtnText}>Kembali</Text>
+        </AppButton>
+      </SafeAreaView>
+    );
+  }
 
-    const stokNum = parseFloat(stok.replace(/\./g, '').replace(/,/g, '')) || 0;
-    const minNum = parseFloat(minimum.replace(/\./g, '').replace(/,/g, '')) || 0;
+  // Resep produk yang masih memakai bahan ini (bahan tidak boleh dihapus selama masih dipakai)
+  const dipakaiDi = existingBahan
+    ? produkList.filter((p) =>
+        Object.values(p.resep).some((items) => items?.some((i) => i.bahanId === existingBahan.id))
+      )
+    : [];
 
-    if (existingBahan) {
-      updateBahan(existingBahan.id, {
-        nama: nama.trim(),
-        satuan,
-        stok: stokNum,
-        minimum: minNum,
-      });
-    } else {
-      tambahBahan({
-        nama: nama.trim(),
-        satuan,
-        stok: stokNum,
-        minimum: minNum,
-      });
+  const handleSimpan = async () => {
+    const namaBersih = nama.trim();
+    if (!namaBersih) return setError('Nama bahan wajib diisi.');
+
+    const duplikat = bahanList.some(
+      (b) => b.id !== existingBahan?.id && b.nama.trim().toLowerCase() === namaBersih.toLowerCase()
+    );
+    if (duplikat) return setError('Bahan dengan nama ini sudah ada.');
+
+    const data = {
+      nama: namaBersih,
+      satuan,
+      stok: Number(stok) || 0,
+      minimum: Number(minimum) || 0,
+    };
+
+    setMenyimpan(true);
+    try {
+      if (existingBahan) await updateBahan(existingBahan.id, data);
+      else await tambahBahan(data);
+      router.push('/(owner)/stok');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menyimpan bahan.');
+    } finally {
+      setMenyimpan(false);
+    }
+  };
+
+  const handleHapusClick = () => {
+    if (!existingBahan) return;
+
+    if (dipakaiDi.length > 0) {
+      showAlert(
+        'Bahan tidak bisa dihapus',
+        `"${existingBahan.nama}" masih dipakai di resep: ${dipakaiDi
+          .map((p) => p.nama)
+          .join(', ')}. Hapus dulu dari resep tersebut.`
+      );
+      return;
     }
 
-    router.push('/(owner)/stok');
+    setModalHapusVisible(true);
+  };
+
+  const eksekusiHapus = async () => {
+    if (!existingBahan) return;
+    setModalHapusVisible(false);
+    try {
+      await hapusBahan(existingBahan.id);
+      router.push('/(owner)/stok');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menghapus bahan.');
+    }
   };
 
   return (
@@ -112,7 +160,10 @@ export default function TambahBahanScreen() {
                 placeholder="Masukkan nama bahan"
                 placeholderTextColor={StickyMilkColors.textMuted}
                 value={nama}
-                onChangeText={setNama}
+                onChangeText={(t) => {
+                  setNama(t);
+                  setError('');
+                }}
               />
             </View>
           </View>
@@ -129,14 +180,7 @@ export default function TambahBahanScreen() {
                     onPress={() => setSatuan(u)}
                     activeOpacity={0.8}
                   >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isSelected && styles.chipTextSelected,
-                      ]}
-                    >
-                      {u}
-                    </Text>
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{u}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -152,7 +196,7 @@ export default function TambahBahanScreen() {
                 placeholderTextColor={StickyMilkColors.textMuted}
                 keyboardType="numeric"
                 value={stok}
-                onChangeText={setStok}
+                onChangeText={(t) => setStok(hanyaAngka(t))}
               />
               <Text style={styles.suffixText}>{satuan}</Text>
             </View>
@@ -167,7 +211,7 @@ export default function TambahBahanScreen() {
                 placeholderTextColor={StickyMilkColors.textMuted}
                 keyboardType="numeric"
                 value={minimum}
-                onChangeText={setMinimum}
+                onChangeText={(t) => setMinimum(hanyaAngka(t))}
               />
               <Text style={styles.suffixText}>{satuan}</Text>
             </View>
@@ -175,14 +219,77 @@ export default function TambahBahanScreen() {
 
           <View style={styles.spacer} />
 
+          {!!error && <Text style={styles.error}>{error}</Text>}
+
           {/* Tombol Simpan */}
-          <AppButton style={styles.saveBtn} onPress={handleSimpan}>
-            <Text style={styles.saveBtnText}>Simpan</Text>
+          <AppButton style={styles.saveBtn} onPress={handleSimpan} disabled={menyimpan}>
+            <Text style={styles.saveBtnText}>{menyimpan ? 'Menyimpan…' : 'Simpan'}</Text>
           </AppButton>
+
+          {/* Tombol Hapus (hanya saat edit) */}
+          {existingBahan && (
+            <AppButton style={styles.deleteBtn} onPress={handleHapusClick} disabled={menyimpan}>
+              <Text style={styles.deleteBtnText}>Hapus Bahan</Text>
+            </AppButton>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal Kustom Konfirmasi Hapus */}
+      {existingBahan && (
+        <Modal
+          transparent={true}
+          visible={modalHapusVisible}
+          animationType="fade"
+          onRequestClose={() => setModalHapusVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="trash-outline" size={28} color="#DC2626" />
+              </View>
+              <Text style={styles.modalTitle}>Hapus Bahan?</Text>
+              <Text style={styles.modalMessage}>
+                "{existingBahan.nama}" beserta riwayat pengadaannya akan dihapus permanen.
+              </Text>
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity
+                  style={styles.btnBatal}
+                  onPress={() => setModalHapusVisible(false)}
+                >
+                  <Text style={styles.btnBatalText}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.btnHapusModal}
+                  onPress={eksekusiHapus}
+                >
+                  <Text style={styles.btnHapusText}>Hapus</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
+}
+
+/**
+ * Formulir dibuat ulang setiap kali layar dibuka, supaya isiannya selalu segar
+ * (layar tab tetap hidup di belakang, sehingga state lama bisa terbawa).
+ */
+export default function TambahBahanScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [sesi, setSesi] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSesi((s) => s + 1);
+    }, [])
+  );
+
+  const bahanId = id && id.length > 0 ? id : undefined; // id kosong = mode tambah
+  return <BahanForm key={`${bahanId ?? 'baru'}-${sesi}`} bahanId={bahanId} />;
 }
 
 const styles = StyleSheet.create({
@@ -292,6 +399,13 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
   },
+  error: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: StickyMilkColors.danger,
+    textAlign: 'center',
+    marginTop: 12,
+  },
   saveBtn: {
     height: 54,
     borderRadius: 27,
@@ -304,5 +418,103 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  deleteBtn: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: StickyMilkColors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  deleteBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: StickyMilkColors.danger,
+  },
+  notFound: {
+    flex: 1,
+    backgroundColor: StickyMilkColors.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  notFoundText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 15,
+    color: StickyMilkColors.textMuted,
+    marginBottom: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 18,
+    color: StickyMilkColors.textDark,
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: StickyMilkColors.textMuted,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  btnBatal: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  btnBatalText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    color: StickyMilkColors.textDark,
+  },
+  btnHapusModal: {
+    flex: 1,
+    backgroundColor: '#DC2626',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  btnHapusText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    color: '#FFF',
   },
 });

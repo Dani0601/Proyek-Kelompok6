@@ -303,17 +303,17 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### D.1 Tabel `transaksi` di Supabase
 <div align="center">
-  <img src="bukti-table-transaksi.png" width="75%" alt="Tabel Transaksi Supabase">
+  <img src="bukti supabase transaksi.png" width="75%" alt="Tabel Transaksi Supabase">
 </div>
 
 #### D.2 Layar Riwayat Transaksi Kasir & Cetak Struk
 <div align="center">
-  <img src="bukti-riwayat-transaksi.gif" width="30%" alt="Riwayat Transaksi dan Cetak Struk">
+  <img src="Transaksi Kasir & Cetak Struk.gif" width="30%" alt="Riwayat Transaksi dan Cetak Struk">
 </div>
 
 #### D.3 Laporan Penjualan & Rekap Omzet Owner
 <div align="center">
-  <img src="bukti-laporan-penjualan.png" width="30%" alt="Laporan Penjualan Owner">
+  <img src="Laporan Penjualan Owner.png" width="30%" alt="Laporan Penjualan Owner">
 </div>
 
 ---

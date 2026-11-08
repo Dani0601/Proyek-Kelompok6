@@ -1,5 +1,7 @@
+
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
+import { simpanTransaksi } from '@/lib/transaksi-api';
 import { useBahan } from '@/context/bahan-context';
 import { useProduk, type Produk, type Varian } from '@/context/produk-context';
 import type { DetailTransaksi } from '@/utils/detail-transaksi';
@@ -38,7 +40,11 @@ type KeranjangValue = {
   cariDetail: (id: string) => DetailTransaksi | undefined;
 };
 
-const UKURAN: Record<Varian, string | null> = { single: null, S: 'Small', L: 'Large' };
+const UKURAN: Record<Varian, string | null> = {
+  single: null,
+  S: 'Small',
+  L: 'Large',
+};
 
 const KeranjangContext = createContext<KeranjangValue | null>(null);
 
@@ -117,14 +123,23 @@ export function KeranjangProvider({ children }: { children: ReactNode }) {
 
   const cekStok = () => bahanKurang(lines);
   const kebutuhanBahan = () => kebutuhan(lines);
+
   const segarkanStok = async () => {
     await refreshBahan();
   };
 
   const kosongkan = () => setLines([]);
 
-  const simpanDetail = (detail: DetailTransaksi) =>
-    setDetailList((prev) => [detail, ...prev.filter((d) => d.id !== detail.id)]);
+  // Simpan detail transaksi ke state lokal dan Supabase
+  const simpanDetail = (detail: DetailTransaksi) => {
+    setDetailList((prev) => [
+      detail,
+      ...prev.filter((d) => d.id !== detail.id),
+    ]);
+
+    // Kirim data transaksi ke tabel transaksi di Supabase
+    void simpanTransaksi(detail);
+  };
 
   const cariDetail = (id: string) => detailList.find((d) => d.id === id);
 

@@ -89,13 +89,13 @@ export default function KasirScreen() {
             refreshing={menyegarkan}
             onRefresh={handleRefresh}
             ListEmptyComponent={
-              <>
+              <View>
                 {memuat ? (
                   <ActivityIndicator style={styles.kosong} color="#8B5A3C" />
                 ) : !error ? (
                   <Text style={[styles.kosong, styles.kosongText]}>Belum ada pesanan hari ini.</Text>
                 ) : null}
-              </>
+              </View>
             }
             renderItem={({ item }) => {
               const warna = WARNA_STATUS[item.status];

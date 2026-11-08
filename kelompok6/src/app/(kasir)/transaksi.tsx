@@ -10,7 +10,6 @@ import { useOrders, type Metode } from '@/context/order-context';
 import { useKeranjang } from '@/context/keranjang-context';
 import { formatRupiah } from '@/context/produk-context';
 import AppButton from '@/components/atoms/AppButton';
-import AppInput from '@/components/atoms/AppInput';
 import ProductCard from '@/components/molecules/ProductCard';
 import ProductList from '@/components/organisms/ProductList';
 import PageTemplate from '@/components/templates/PageTemplate';
@@ -32,8 +31,9 @@ const parseNumber = (str: string) => Number(String(str).replace(/[^0-9]/g, '')) 
 
 export default function TransaksiPenjualanScreen() {
   const router = useRouter();
-  const { nomorBerikutnya, tambahPesanan } = useOrders();
-  const { baris, total, ubahQty, bisaTambah, cekStok, kurangiStok, kembalikanStok, kosongkan, simpanDetail } = useKeranjang();
+  const { nomorBerikutnya, buatPesananDenganStok } = useOrders();
+  const { baris, total, ubahQty, bisaTambah, cekStok, kebutuhanBahan, segarkanStok, kosongkan, simpanDetail } =
+    useKeranjang();
 
   const [fontsLoaded] = useFonts({ Poppins_700Bold, Nunito_400Regular, Nunito_700Bold });
 
@@ -54,68 +54,63 @@ export default function TransaksiPenjualanScreen() {
   };
 
   const handlePay = async () => {
-  if (menyimpan) return;
-  if (dipesan.length === 0) {
-    showAlert('Pesanan kosong', 'Tambahkan minimal satu item dulu ya.');
-    return;
-  }
-  if (method === 'Tunai' && received < total) {
-    showAlert('Uang kurang', `Uang diterima kurang ${formatRupiah(total - received)} dari total.`);
-    return;
-  }
-  const kurang = cekStok();
-  if (kurang.length > 0) {
-    showAlert('Stok tidak cukup', `Stok ${kurang.join(', ')} tidak cukup untuk pesanan ini.`);
-    return;
-  }
-
-  setMenyimpan(true);
-  try {
-    // 1) potong stok bahan di Supabase (dicek ulang dengan stok terbaru di server)
-    const stok = await kurangiStok();
-    if (!stok.ok) {
-      showAlert('Transaksi gagal', stok.pesan);
+    if (menyimpan) return;
+    if (dipesan.length === 0) {
+      showAlert('Pesanan kosong', 'Tambahkan minimal satu item dulu ya.');
+      return;
+    }
+    if (method === 'Tunai' && received < total) {
+      showAlert('Uang kurang', `Uang diterima kurang ${formatRupiah(total - received)} dari total.`);
+      return;
+    }
+    const kurang = cekStok();
+    if (kurang.length > 0) {
+      showAlert('Stok tidak cukup', `Stok ${kurang.join(', ')} tidak cukup untuk pesanan ini.`);
       return;
     }
 
-    // 2) simpan pesanan ke antrean (tabel pesanan); nomor antrean ditentukan server
-    const hasil = await tambahPesanan({
-      produk: dipesan.map((b) => `${b.nama} × ${b.qty}`).join(', '),
-      metode: method,
-    });
-    if (!hasil.ok) {
-      await kembalikanStok(); // pesanan gagal tersimpan -> stok dikembalikan
-      showAlert('Transaksi gagal', hasil.pesan);
-      return;
+    setMenyimpan(true);
+    try {
+      // satu langkah di database: potong stok sesuai resep + buat pesanan antrean
+      const hasil = await buatPesananDenganStok({
+        produk: dipesan.map((b) => `${b.nama} × ${b.qty}`).join(', '),
+        metode: method,
+        kebutuhan: kebutuhanBahan(),
+      });
+      if (!hasil.ok) {
+        showAlert('Transaksi gagal', hasil.pesan);
+        return;
+      }
+
+      await segarkanStok(); // stok di layar Stok ikut berkurang
+
+      // TODO (Keva): simpan nota ke tabel `transaksi` di sini
+
+      const detail: DetailTransaksi = {
+        id: hasil.id,
+        waktu: new Date().toISOString(),
+        kasir: KASIR_AKTIF,
+        metode: method,
+        items: dipesan.map((b) => ({ nama: b.nama, qty: b.qty, harga: b.harga })),
+        subtotal: total,
+        total,
+        uangDiterima: method === 'Tunai' ? received : total,
+        kembalian: method === 'Tunai' ? change : 0,
+        status: 'Selesai',
+      };
+
+      simpanDetail(detail);
+      kosongkan(); // mulai pesanan baru
+      setCashReceived('50000');
+
+      router.push({
+        pathname: '/(kasir)/detail-transaksi',
+        params: { id: detail.id },
+      });
+    } finally {
+      setMenyimpan(false);
     }
-
-    // TODO (Keva): simpan nota ke tabel `transaksi` di sini
-
-    const detail: DetailTransaksi = {
-      id: hasil.id,
-      waktu: new Date().toISOString(),
-      kasir: KASIR_AKTIF,
-      metode: method,
-      items: dipesan.map((b) => ({ nama: b.nama, qty: b.qty, harga: b.harga })),
-      subtotal: total,
-      total,
-      uangDiterima: method === 'Tunai' ? received : total,
-      kembalian: method === 'Tunai' ? change : 0,
-      status: 'Selesai',
-    };
-
-    simpanDetail(detail);
-    kosongkan(); // mulai pesanan baru
-    setCashReceived('50000');
-
-    router.push({
-      pathname: '/(kasir)/detail-transaksi',
-      params: { id: detail.id },
-    });
-  } finally {
-    setMenyimpan(false);
-  }
-};
+  };
 
   if (!fontsLoaded) return null;
 

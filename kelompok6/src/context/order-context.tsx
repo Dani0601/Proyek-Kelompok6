@@ -38,6 +38,11 @@ type OrderValue = {
   error: string | null;
   nomorBerikutnya: string;
   tambahPesanan: (p: { produk: string; metode: Metode }) => Promise<HasilTambah>;
+  buatPesananDenganStok: (p: {
+    produk: string;
+    metode: Metode;
+    kebutuhan: Record<string, number>;
+  }) => Promise<HasilTambah>;
   ubahStatus: (id: string) => Promise<HasilUbahStatus>;
   refresh: () => Promise<void>;
 };
@@ -67,6 +72,15 @@ const awalHariIni = () => {
 };
 
 const urutkan = (list: Pesanan[]) => [...list].sort((a, b) => a.dibuat.localeCompare(b.dibuat));
+
+// pesan error dari fungsi database buat_pesanan (pesan aslinya ditampilkan apa adanya)
+const pesanRpc = (e: { message?: string } | null) => {
+  const m = e?.message ?? '';
+  if (m.includes('Could not find the function')) {
+    return 'Fungsi database "buat_pesanan" belum dibuat. Jalankan skrip SQL-nya di Supabase.';
+  }
+  return m || 'Gagal menyimpan transaksi ke database.';
+};
 
 const OrderContext = createContext<OrderValue | null>(null);
 
@@ -123,7 +137,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
-  // hanya perkiraan untuk ditampilkan; nomor sebenarnya ditentukan saat insert
+  // hanya perkiraan untuk ditampilkan; nomor sebenarnya ditentukan di database saat pesanan dibuat
   const nomorBerikutnya = useMemo(() => {
     const maksLokal = pesanan.reduce((m, p) => Math.max(m, nomorDariId(p.id)), 0);
     return buatId(Math.max(nomorTerakhir, maksLokal) + 1);
@@ -158,6 +172,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return { ok: false, pesan: 'Nomor antrean bentrok dengan kasir lain. Silakan coba lagi.' };
   };
 
+  // satu langkah di database: cek stok, potong stok sesuai resep, dan buat pesanan antrean
+  const buatPesananDenganStok: OrderValue['buatPesananDenganStok'] = async ({
+    produk,
+    metode,
+    kebutuhan,
+  }) => {
+    const { data, error: err } = await supabase.rpc('buat_pesanan', {
+      p_produk: produk,
+      p_metode: metode,
+      p_kebutuhan: kebutuhan,
+    });
+    if (err || typeof data !== 'string') return { ok: false, pesan: pesanRpc(err) };
+
+    await refresh(); // muat ulang antrean dan nomor terakhir
+    return { ok: true, id: data };
+  };
+
   const ubahStatus: OrderValue['ubahStatus'] = async (id) => {
     const saatIni = pesanan.find((p) => p.id === id);
     if (!saatIni) return { ok: false, pesan: 'Pesanan tidak ditemukan.' };
@@ -189,7 +220,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrderContext.Provider
-      value={{ pesanan, memuat, error, nomorBerikutnya, tambahPesanan, ubahStatus, refresh }}
+      value={{
+        pesanan,
+        memuat,
+        error,
+        nomorBerikutnya,
+        tambahPesanan,
+        buatPesananDenganStok,
+        ubahStatus,
+        refresh,
+      }}
     >
       {children}
     </OrderContext.Provider>

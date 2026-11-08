@@ -56,6 +56,10 @@ export default function OwnerTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="riwayat-stok-masuk"
+        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
         name="stok"
         options={{
           title: 'Stok',

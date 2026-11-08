@@ -234,12 +234,12 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### B.1 Tabel `bahan` di Supabase
 <div align="center">
-  <img src="bukti-table-bahan.png" width="75%" alt="Tabel Bahan di Supabase">
+  <img src="bukti-tabel-bahan.jpeg" width="75%" alt="Tabel Bahan di Supabase">
 </div>
 
 #### B.2 Layar Manajemen Stok Bahan Baku (Data dari Supabase)
 <div align="center">
-  <img src="bukti-layar-stok-bahan.png" width="30%" alt="Layar Stok Bahan Owner">
+  <img src="bukti-layar-stok-bahan.jpeg" width="30%" alt="Layar Stok Bahan Owner">
 </div>
 
 #### B.3 Tambah / Edit Bahan Baku
@@ -249,7 +249,7 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### B.4 Tabel `stok_masuk` di Supabase
 <div align="center">
-  <img src="bukti-table-stok-masuk.png" width="75%" alt="Tabel Stok Masuk Supabase">
+  <img src="bukti-table-stok-masuk.jpeg" width="75%" alt="Tabel Stok Masuk Supabase">
 </div>
 
 #### B.5 Form Pengadaan Stok Bahan Masuk (`stok-masuk.tsx`)
@@ -259,7 +259,7 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### B.6 Riwayat Pengadaan & Bertambahnya Stok Bahan
 <div align="center">
-  <img src="bukti-riwayat-stok-masuk.png" width="30%" alt="Riwayat Pengadaan Bahan">
+  <img src="bukti-riwayat-stok-masuk.jpeg" width="30%" alt="Riwayat Pengadaan Bahan">
 </div>
 
 ---

@@ -9,3 +9,19 @@ export const showAlert = (title: string, message: string, onOk?: () => void) => 
     Alert.alert(title, message, [{ text: 'OK', onPress: onOk }], { cancelable: false });
   }
 };
+/** Dialog konfirmasi Batal/Ya yang jalan di HP dan di web. */
+export const showConfirm = (
+  title: string,
+  message: string,
+  onConfirm: () => void,
+  labelYa = 'Hapus'
+) => {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n${message}`)) onConfirm();
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Batal', style: 'cancel' },
+      { text: labelYa, style: 'destructive', onPress: onConfirm },
+    ]);
+  }
+};

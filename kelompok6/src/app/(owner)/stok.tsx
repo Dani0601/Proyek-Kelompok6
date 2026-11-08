@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -46,7 +48,8 @@ const rasioStok = (b: Bahan) => (b.minimum > 0 ? b.stok / b.minimum : b.stok > 0
 
 export default function StokScreen() {
   const router = useRouter();
-  const { bahanList } = useBahan();
+  const { bahanList, memuat, galat, refreshBahan } = useBahan();
+  const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   // Tampilan awal: semua bahan, diurutkan dari yang paling mau habis.
   const [filter, setFilter] = useState<Filter>('menipis');
@@ -79,12 +82,20 @@ export default function StokScreen() {
 
   if (!fontsLoaded) return null;
 
+  // Tarik layar ke bawah untuk membaca ulang data dari Supabase
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshBahan();
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header */}
         <View style={styles.headerRow}>
@@ -95,7 +106,7 @@ export default function StokScreen() {
           <TouchableOpacity
             style={styles.addCircle}
             activeOpacity={0.8}
-            onPress={() => router.push('/(owner)/tambah-bahan')}
+            onPress={() => router.push({ pathname: '/(owner)/tambah-bahan', params: { id: '' } })}
           >
             <Ionicons name="add" size={26} color="#FFFFFF" />
           </TouchableOpacity>
@@ -132,6 +143,16 @@ export default function StokScreen() {
             );
           })}
         </View>
+
+        {/* Gagal memuat dari Supabase */}
+        {!!galat && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{galat}</Text>
+            <TouchableOpacity onPress={refreshBahan} activeOpacity={0.7}>
+              <Text style={styles.retryText}>Coba lagi</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Warning Banner */}
         {hampirHabis.length > 0 && (
@@ -176,9 +197,15 @@ export default function StokScreen() {
           })}
         </ProductList>
 
-        {filtered.length === 0 && (
+        {memuat && bahanList.length === 0 && (
+          <ActivityIndicator style={styles.loader} color={COLORS.brown} />
+        )}
+
+        {!memuat && filtered.length === 0 && (
           <Text style={styles.empty}>
-            {filter === 'hampir' && !query.trim()
+            {bahanList.length === 0
+              ? 'Belum ada bahan baku. Tekan + untuk menambahkan.'
+              : filter === 'hampir' && !query.trim()
               ? 'Semua stok masih aman.'
               : 'Bahan tidak ditemukan.'}
           </Text>
@@ -187,9 +214,17 @@ export default function StokScreen() {
         {/* Catat Stok Masuk Button */}
         <AppButton
           style={styles.stokMasukBtn}
-          onPress={() => router.push('/(owner)/stok-masuk')}
+          onPress={() => router.push({ pathname: '/(owner)/stok-masuk', params: { id: '' } })}
         >
           <Text style={styles.stokMasukText}>Catat Stok Masuk</Text>
+        </AppButton>
+
+        {/* Riwayat Pengadaan */}
+        <AppButton
+          style={styles.riwayatBtn}
+          onPress={() => router.push('/(owner)/riwayat-stok-masuk')}
+        >
+          <Text style={styles.riwayatText}>Riwayat Pengadaan</Text>
         </AppButton>
       </ScrollView>
     </SafeAreaView>
@@ -273,6 +308,42 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#FFFFFF',
+  },
+
+  errorBanner: {
+    backgroundColor: COLORS.dangerSoft,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  errorText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: '#B91C1C',
+  },
+  retryText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.brown,
+    marginTop: 6,
+  },
+  loader: {
+    marginVertical: 30,
+  },
+  riwayatBtn: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.brown,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  riwayatText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: COLORS.brown,
   },
 
   warnBanner: {

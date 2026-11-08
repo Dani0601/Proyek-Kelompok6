@@ -180,17 +180,17 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### A.1 Bukti Koneksi Konsol Metro & Supabase
 <div align="center">
-  <img src="bukti-koneksi-supabase.png" width="60%" alt="Bukti Koneksi Supabase">
+  <img src="bukti-koneksi-supabase.jpeg" width="60%" alt="Bukti Koneksi Supabase">
 </div>
 
 #### A.2 Tabel `produk` di Table Editor Supabase
 <div align="center">
-  <img src="bukti-table-editor-produk.png" width="75%" alt="Tabel Produk Supabase">
+  <img src="bukti-table-editor-produk.jpeg" width="75%" alt="Tabel Produk Supabase">
 </div>
 
 #### A.3 Cloud Storage Bucket `produk`
 <div align="center">
-  <img src="bukti-storage-bucket.png" width="75%" alt="Storage Bucket Produk">
+  <img src="bukti-storage-bucket.jpeg" width="75%" alt="Storage Bucket Produk">
 </div>
 
 #### A.4 Layar Manajemen Produk Owner (Data Cloud + Filter Kategori)
@@ -210,7 +210,7 @@ Menginisialisasi klien Supabase `createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` 
 
 #### A.7 Sinkronisasi Produk & Foto Cloud ke Layar Kasir
 <div align="center">
-  <img src="bukti-kasir-sinkron.png" width="30%" alt="Kasir Sinkron Cloud">
+  <img src="bukti-kasir-sinkron.jpeg" width="30%" alt="Kasir Sinkron Cloud">
 </div>
 
 #### A.8 Edit Produk & Pengujian Tombol Hapus Foto

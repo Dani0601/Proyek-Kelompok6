@@ -33,12 +33,13 @@ const parseNumber = (str: string) => Number(String(str).replace(/[^0-9]/g, '')) 
 export default function TransaksiPenjualanScreen() {
   const router = useRouter();
   const { nomorBerikutnya, tambahPesanan } = useOrders();
-  const { baris, total, ubahQty, bisaTambah, cekStok, kurangiStok, kosongkan, simpanDetail } = useKeranjang();
+  const { baris, total, ubahQty, bisaTambah, cekStok, kurangiStok, kembalikanStok, kosongkan, simpanDetail } = useKeranjang();
 
   const [fontsLoaded] = useFonts({ Poppins_700Bold, Nunito_400Regular, Nunito_700Bold });
 
   const [method, setMethod] = useState<Metode>('Tunai');
   const [cashReceived, setCashReceived] = useState('50000');
+  const [menyimpan, setMenyimpan] = useState(false);
 
   const dipesan = useMemo(() => baris.filter((b) => b.qty > 0), [baris]);
 
@@ -52,24 +53,46 @@ export default function TransaksiPenjualanScreen() {
     }
   };
 
-  const handlePay = () => {
-    if (dipesan.length === 0) {
-      showAlert('Pesanan kosong', 'Tambahkan minimal satu item dulu ya.');
-      return;
-    }
-    if (method === 'Tunai' && received < total) {
-      showAlert('Uang kurang', `Uang diterima kurang ${formatRupiah(total - received)} dari total.`);
-      return;
-    }
-    const kurang = cekStok();
-    if (kurang.length > 0) {
-      showAlert('Stok tidak cukup', `Stok ${kurang.join(', ')} tidak cukup untuk pesanan ini.`);
+  const handlePay = async () => {
+  if (menyimpan) return;
+  if (dipesan.length === 0) {
+    showAlert('Pesanan kosong', 'Tambahkan minimal satu item dulu ya.');
+    return;
+  }
+  if (method === 'Tunai' && received < total) {
+    showAlert('Uang kurang', `Uang diterima kurang ${formatRupiah(total - received)} dari total.`);
+    return;
+  }
+  const kurang = cekStok();
+  if (kurang.length > 0) {
+    showAlert('Stok tidak cukup', `Stok ${kurang.join(', ')} tidak cukup untuk pesanan ini.`);
+    return;
+  }
+
+  setMenyimpan(true);
+  try {
+    // 1) potong stok bahan di Supabase (dicek ulang dengan stok terbaru di server)
+    const stok = await kurangiStok();
+    if (!stok.ok) {
+      showAlert('Transaksi gagal', stok.pesan);
       return;
     }
 
-    // catatan transaksi untuk halaman detail (dibuat sebelum keranjang dikosongkan)
+    // 2) simpan pesanan ke antrean (tabel pesanan); nomor antrean ditentukan server
+    const hasil = await tambahPesanan({
+      produk: dipesan.map((b) => `${b.nama} × ${b.qty}`).join(', '),
+      metode: method,
+    });
+    if (!hasil.ok) {
+      await kembalikanStok(); // pesanan gagal tersimpan -> stok dikembalikan
+      showAlert('Transaksi gagal', hasil.pesan);
+      return;
+    }
+
+    // TODO (Keva): simpan nota ke tabel `transaksi` di sini
+
     const detail: DetailTransaksi = {
-      id: nomorBerikutnya,
+      id: hasil.id,
       waktu: new Date().toISOString(),
       kasir: KASIR_AKTIF,
       metode: method,
@@ -81,20 +104,18 @@ export default function TransaksiPenjualanScreen() {
       status: 'Selesai',
     };
 
-    kurangiStok(); // stok bahan berkurang sesuai resep, terlihat di stok.tsx owner
-    tambahPesanan({
-      produk: dipesan.map((b) => `${b.nama} × ${b.qty}`).join(', '),
-      metode: method,
-    });
-    simpanDetail(detail); // disimpan di context, alamat halaman cukup membawa id
+    simpanDetail(detail);
     kosongkan(); // mulai pesanan baru
-    setCashReceived('50000'); // ganti '' kalau kasir harus mengetik uang diterima setiap transaksi
+    setCashReceived('50000');
 
     router.push({
       pathname: '/(kasir)/detail-transaksi',
       params: { id: detail.id },
     });
-  };
+  } finally {
+    setMenyimpan(false);
+  }
+};
 
   if (!fontsLoaded) return null;
 
@@ -225,8 +246,8 @@ export default function TransaksiPenjualanScreen() {
             </View>
           </View>
 
-          <AppButton onPress={handlePay} style={styles.payBtn} textStyle={styles.payText}>
-            Bayar & Buat Antrean
+          <AppButton onPress={handlePay} disabled={menyimpan} style={styles.payBtn} textStyle={styles.payText}>
+            {menyimpan ? 'Memproses...' : 'Bayar & Buat Antrean'}
           </AppButton>
         </ScrollView>
       </SafeAreaView>

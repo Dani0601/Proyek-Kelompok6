@@ -1,12 +1,21 @@
 import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useOrders, type Status } from '@/context/order-context';
+import { useOrders, type StatusPesanan as Status } from '@/context/order-context';
 
 import PageTemplate from '@/components/templates/PageTemplate';
 import { StickyMilkFonts } from '@/constants/design-tokens';
+import { showAlert } from '@/utils/show-alert';
+
 const FILTER: ('Semua' | Status)[] = ['Semua', 'Menunggu', 'Diproses', 'Siap'];
 
 const WARNA_STATUS: Record<Status, { bg: string; teks: string }> = {
@@ -15,12 +24,34 @@ const WARNA_STATUS: Record<Status, { bg: string; teks: string }> = {
   Siap: { bg: '#DDF3E0', teks: '#2E7D32' },
 };
 
+const LABEL_TOMBOL: Record<Status, string> = {
+  Menunggu: 'Proses',
+  Diproses: 'Selesai',
+  Siap: 'Siap',
+};
+
 export default function KasirScreen() {
   const [filter, setFilter] = useState<'Semua' | Status>('Semua');
-  const { pesanan, ubahStatus } = useOrders();
+  const [prosesId, setProsesId] = useState<string | null>(null);
+  const [menyegarkan, setMenyegarkan] = useState(false);
+  const { pesanan, ubahStatus, memuat, error, refresh } = useOrders();
 
   const dataTampil =
     filter === 'Semua' ? pesanan : pesanan.filter((p) => p.status === filter);
+
+  const handleUbah = async (id: string) => {
+    if (prosesId === id) return;
+    setProsesId(id);
+    const hasil = await ubahStatus(id);
+    setProsesId(null);
+    if (!hasil.ok) showAlert('Gagal mengubah status', hasil.pesan);
+  };
+
+  const handleRefresh = async () => {
+    setMenyegarkan(true);
+    await refresh();
+    setMenyegarkan(false);
+  };
 
   return (
     <PageTemplate>
@@ -43,42 +74,59 @@ export default function KasirScreen() {
             ))}
           </View>
 
-          <FlatList
-        data={dataTampil}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const warna = WARNA_STATUS[item.status];
-          const selesai = item.status === 'Siap';
-          return (
-            <View style={styles.kartu}>
-              <View style={styles.nomorBox}>
-                <Text style={styles.nomor}>{item.id}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.produk}>{item.produk}</Text>
-                <View style={[styles.badge, { backgroundColor: warna.bg }]}>
-                  <Text style={[styles.badgeText, { color: warna.teks }]}>
-                    {item.status}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={[styles.tombol, selesai && styles.tombolNonaktif]}
-                onPress={() => ubahStatus(item.id)}
-                disabled={selesai}
-              >
-                <Text style={styles.tombolText}>
-                  {item.status === 'Menunggu'
-                    ? 'Proses'
-                    : item.status === 'Diproses'
-                    ? 'Selesai'
-                    : 'Siap'}
-                </Text>
+          {error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={handleRefresh}>
+                <Text style={styles.errorLink}>Coba lagi</Text>
               </TouchableOpacity>
             </View>
-          );
-        }}
-      />
+          )}
+
+          <FlatList
+            data={dataTampil}
+            keyExtractor={(item) => item.id}
+            refreshing={menyegarkan}
+            onRefresh={handleRefresh}
+            ListEmptyComponent={
+              <>
+                {memuat ? (
+                  <ActivityIndicator style={styles.kosong} color="#8B5A3C" />
+                ) : !error ? (
+                  <Text style={[styles.kosong, styles.kosongText]}>Belum ada pesanan hari ini.</Text>
+                ) : null}
+              </>
+            }
+            renderItem={({ item }) => {
+              const warna = WARNA_STATUS[item.status];
+              const selesai = item.status === 'Siap';
+              const diproses = prosesId === item.id;
+              return (
+                <View style={styles.kartu}>
+                  <View style={styles.nomorBox}>
+                    <Text style={styles.nomor}>{item.id}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.produk}>{item.produk}</Text>
+                    <View style={[styles.badge, { backgroundColor: warna.bg }]}>
+                      <Text style={[styles.badgeText, { color: warna.teks }]}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.tombol, (selesai || diproses) && styles.tombolNonaktif]}
+                    onPress={() => handleUbah(item.id)}
+                    disabled={selesai || diproses}
+                  >
+                    <Text style={styles.tombolText}>
+                      {diproses ? '...' : LABEL_TOMBOL[item.status]}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }}
+          />
         </View>
       </SafeAreaView>
     </PageTemplate>
@@ -101,6 +149,23 @@ const styles = StyleSheet.create({
   tabAktif: { backgroundColor: '#8B5A3C' },
   tabText: { fontFamily: StickyMilkFonts.bodySemi, fontSize: 12, color: '#8B5A3C' },
   tabTextAktif: { color: '#FFFFFF' },
+
+  errorBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FDECC8',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  errorText: { fontFamily: StickyMilkFonts.body, fontSize: 12, color: '#9A6700', flex: 1, paddingRight: 8 },
+  errorLink: { fontFamily: StickyMilkFonts.bodyBold, fontSize: 12, color: '#8B5A3C' },
+
+  kosong: { marginTop: 32 },
+  kosongText: { textAlign: 'center', fontFamily: StickyMilkFonts.body, fontSize: 13, color: '#8A7A6B' },
+
   kartu: {
     flexDirection: 'row',
     alignItems: 'center',

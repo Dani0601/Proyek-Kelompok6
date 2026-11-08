@@ -1,35 +1,14 @@
-import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import PageTemplate from '@/components/templates/PageTemplate';
 import { StickyMilkFonts } from '@/constants/design-tokens';
+import { ambilTransaksi } from '@/lib/transaksi-api';
+import type { DetailTransaksi } from '@/utils/detail-transaksi';
 
 type Mode = 'Tanggal' | 'Bulan' | 'Tahun';
 const MODE: Mode[] = ['Tanggal', 'Bulan', 'Tahun'];
-
-type Metode = 'Tunai' | 'QRIS';
-type Transaksi = {
-  id: string;
-  produk: string;
-  tgl: string; // YYYY-MM-DD
-  jam: string;
-  metode: Metode;
-  total: number;
-};
-
-// Data contoh. Nanti diganti dari data transaksi asli.
-const DATA_TRANSAKSI: Transaksi[] = [
-  { id: 'A-013', produk: 'Redvelvet (S) × 2', tgl: '2026-10-18', jam: '10:41', metode: 'Tunai', total: 18000 },
-  { id: 'A-012', produk: 'Durian (L) × 3', tgl: '2026-10-18', jam: '10:32', metode: 'QRIS', total: 51000 },
-  { id: 'A-011', produk: 'Matcha (S) × 1', tgl: '2026-10-18', jam: '10:20', metode: 'QRIS', total: 9000 },
-  { id: 'A-010', produk: 'Coklat (L) × 2', tgl: '2026-10-18', jam: '10:05', metode: 'Tunai', total: 38000 },
-  { id: 'A-009', produk: 'Mangga (L) × 2', tgl: '2026-10-16', jam: '15:12', metode: 'Tunai', total: 42000 },
-  { id: 'A-008', produk: 'Taro (S) × 3', tgl: '2026-10-15', jam: '11:48', metode: 'QRIS', total: 27000 },
-  { id: 'A-007', produk: 'Durian (S) × 1', tgl: '2026-10-10', jam: '09:30', metode: 'Tunai', total: 15000 },
-  { id: 'A-006', produk: 'Coklat (L) × 4', tgl: '2026-10-03', jam: '16:05', metode: 'QRIS', total: 76000 },
-  { id: 'A-005', produk: 'Taro (L) × 2', tgl: '2026-09-20', jam: '13:15', metode: 'Tunai', total: 34000 },
-  { id: 'A-004', produk: 'Durian (L) × 5', tgl: '2025-12-12', jam: '14:00', metode: 'QRIS', total: 85000 },
-];
 
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -41,10 +20,33 @@ const formatRupiah = (angka: number) =>
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const jamDari = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 export default function RiwayatScreen() {
+  const [data, setData] = useState<DetailTransaksi[]>([]);
+  const [memuat, setMemuat] = useState(true);
+  const [gagal, setGagal] = useState(false);
   const [mode, setMode] = useState<Mode>('Tanggal');
-  const [acuan, setAcuan] = useState(new Date(2026, 9, 18));
+  const [acuan, setAcuan] = useState(new Date());
+
+  useFocusEffect(
+    useCallback(() => {
+      let aktif = true;
+      (async () => {
+        const hasil = await ambilTransaksi();
+        if (!aktif) return;
+        if (hasil === null) setGagal(true);
+        else {
+          setGagal(false);
+          setData(hasil);
+        }
+        setMemuat(false);
+      })();
+      return () => {
+        aktif = false;
+      };
+    }, [])
+  );
 
   const geser = (arah: 1 | -1) => {
     const d = new Date(acuan);
@@ -67,9 +69,7 @@ export default function RiwayatScreen() {
     return tgl.startsWith(`${acuan.getFullYear()}`);
   };
 
-  const dataTampil = DATA_TRANSAKSI
-    .filter((t) => cocok(t.tgl))
-    .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
+  const dataTampil = data.filter((t) => cocok(toIso(new Date(t.waktu))));
 
   const pendapatan = dataTampil.reduce((j, t) => j + t.total, 0);
   const jumlah = dataTampil.length;
@@ -128,25 +128,42 @@ export default function RiwayatScreen() {
             </View>
           </View>
 
-          <FlatList
-            data={dataTampil}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
-            }
-            renderItem={({ item }) => (
-              <View style={styles.kartuTrx}>
-                <View style={styles.trxBadge}>
-                  <Text style={styles.trxBadgeText}>TRX</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.trxProduk}>{item.id} · {item.produk}</Text>
-                  <Text style={styles.trxWaktu}>{item.tgl} · {item.jam} · {item.metode}</Text>
-                </View>
-                <Text style={styles.trxTotal}>{formatRupiah(item.total)}</Text>
-              </View>
-            )}
-          />
+          {memuat ? (
+            <ActivityIndicator color="#8B5A3C" style={{ marginTop: 20 }} />
+          ) : (
+            <FlatList
+              data={dataTampil}
+              keyExtractor={(item) => `${item.id}-${item.waktu}`}
+              ListHeaderComponent={
+                gagal ? (
+                  <Text style={styles.kosong}>Gagal memuat riwayat. Periksa koneksi internet.</Text>
+                ) : null
+              }
+              ListEmptyComponent={
+                gagal ? null : <Text style={styles.kosong}>Belum ada transaksi di periode ini.</Text>
+              }
+              renderItem={({ item }) => {
+                const d = new Date(item.waktu);
+                const produk = item.items.map((i) => `${i.nama} × ${i.qty}`).join(', ');
+                return (
+                  <View style={styles.kartuTrx}>
+                    <View style={styles.trxBadge}>
+                      <Text style={styles.trxBadgeText}>TRX</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.trxProduk} numberOfLines={2}>
+                        {item.id} · {produk}
+                      </Text>
+                      <Text style={styles.trxWaktu}>
+                        {toIso(d)} · {jamDari(d)} · {item.metode}
+                      </Text>
+                    </View>
+                    <Text style={styles.trxTotal}>{formatRupiah(item.total)}</Text>
+                  </View>
+                );
+              }}
+            />
+          )}
         </View>
       </SafeAreaView>
     </PageTemplate>

@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 
 import PageTemplate from '@/components/templates/PageTemplate';
-import { useBahan } from '@/context/bahan-context';
+import { ambilTransaksi, ambilStokMasuk } from '@/lib/transaksi-api';
 
 type Mode = 'Tanggal' | 'Bulan' | 'Tahun';
 const MODE: Mode[] = ['Tanggal', 'Bulan', 'Tahun'];
@@ -22,20 +23,6 @@ type Catatan = {
   nominal: number;
 };
 
-// Pendapatan: masih data contoh (nanti diganti dari data transaksi asli).
-const DATA_PENDAPATAN: Catatan[] = [
-  { id: 'A-013', jenis: 'masuk', judul: 'A-013 · Redvelvet (S) × 2', tgl: '2026-10-18', jam: '10:41', keterangan: 'Tunai', nominal: 18000 },
-  { id: 'A-012', jenis: 'masuk', judul: 'A-012 · Durian (L) × 3', tgl: '2026-10-18', jam: '10:32', keterangan: 'QRIS', nominal: 51000 },
-  { id: 'A-011', jenis: 'masuk', judul: 'A-011 · Matcha (S) × 1', tgl: '2026-10-18', jam: '10:20', keterangan: 'QRIS', nominal: 9000 },
-  { id: 'A-010', jenis: 'masuk', judul: 'A-010 · Coklat (L) × 2', tgl: '2026-10-18', jam: '10:05', keterangan: 'Tunai', nominal: 38000 },
-  { id: 'A-009', jenis: 'masuk', judul: 'A-009 · Mangga (L) × 2', tgl: '2026-10-16', jam: '15:12', keterangan: 'Tunai', nominal: 42000 },
-  { id: 'A-008', jenis: 'masuk', judul: 'A-008 · Taro (S) × 3', tgl: '2026-10-15', jam: '11:48', keterangan: 'QRIS', nominal: 27000 },
-  { id: 'A-007', jenis: 'masuk', judul: 'A-007 · Durian (S) × 1', tgl: '2026-10-10', jam: '09:30', keterangan: 'Tunai', nominal: 15000 },
-  { id: 'A-006', jenis: 'masuk', judul: 'A-006 · Coklat (L) × 4', tgl: '2026-10-03', jam: '16:05', keterangan: 'QRIS', nominal: 76000 },
-  { id: 'A-005', jenis: 'masuk', judul: 'A-005 · Taro (L) × 2', tgl: '2026-09-20', jam: '13:15', keterangan: 'Tunai', nominal: 34000 },
-  { id: 'A-004', jenis: 'masuk', judul: 'A-004 · Durian (L) × 5', tgl: '2025-12-12', jam: '14:00', keterangan: 'QRIS', nominal: 85000 },
-];
-
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
@@ -44,19 +31,65 @@ const NAMA_BULAN = [
 const formatRupiah = (angka: number) =>
   'Rp ' + Math.abs(angka).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-const formatSaldo = (angka: number) =>
-  (angka < 0 ? '-' : '') + formatRupiah(angka);
+const formatSaldo = (angka: number) => (angka < 0 ? '-' : '') + formatRupiah(angka);
 
 const pad = (n: number) => String(n).padStart(2, '0');
-
 const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const jamDari = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 export default function LaporanScreen() {
-  const { bahanList, riwayatStokMasuk } = useBahan();
+  const [semua, setSemua] = useState<Catatan[]>([]);
+  const [memuat, setMemuat] = useState(true);
+  const [gagal, setGagal] = useState(false);
 
   const [mode, setMode] = useState<Mode>('Tanggal');
   const [filterJenis, setFilterJenis] = useState<FilterJenis>('Semua');
-  const [acuan, setAcuan] = useState(new Date(2026, 9, 18));
+  const [acuan, setAcuan] = useState(new Date());
+
+  useFocusEffect(
+    useCallback(() => {
+      let aktif = true;
+      (async () => {
+        const [trx, stok] = await Promise.all([ambilTransaksi(), ambilStokMasuk()]);
+        if (!aktif) return;
+
+        if (trx === null || stok === null) {
+          setGagal(true);
+        } else {
+          setGagal(false);
+          const pemasukan: Catatan[] = trx.map((t) => {
+            const d = new Date(t.waktu);
+            return {
+              id: `trx-${t.id}-${t.waktu}`,
+              jenis: 'masuk',
+              judul: `${t.id} · ${t.items.map((i) => `${i.nama} × ${i.qty}`).join(', ')}`,
+              tgl: toIso(d),
+              jam: jamDari(d),
+              keterangan: t.metode,
+              nominal: t.total,
+            };
+          });
+          const pengeluaran: Catatan[] = stok.map((s) => {
+            const d = new Date(s.tanggal);
+            return {
+              id: `sm-${s.id}`,
+              jenis: 'keluar',
+              judul: `Beli ${s.nama} ${s.jumlah} ${s.satuan}`.trim(),
+              tgl: toIso(d),
+              jam: jamDari(d),
+              keterangan: s.catatan || 'Stok masuk',
+              nominal: s.harga,
+            };
+          });
+          setSemua([...pemasukan, ...pengeluaran]);
+        }
+        setMemuat(false);
+      })();
+      return () => {
+        aktif = false;
+      };
+    }, [])
+  );
 
   const geser = (arah: 1 | -1) => {
     const d = new Date(acuan);
@@ -79,22 +112,6 @@ export default function LaporanScreen() {
     return tgl.startsWith(`${acuan.getFullYear()}`);
   };
 
-  // Pengeluaran asli dari stok masuk (bahan-context)
-  const dataPengeluaran: Catatan[] = riwayatStokMasuk.map((s) => {
-    const d = new Date(s.tanggal);
-    const bahan = bahanList.find((b) => b.id === s.bahanId);
-    return {
-      id: `sm-${s.id}`,
-      jenis: 'keluar',
-      judul: `Beli ${bahan ? bahan.nama : 'bahan'} ${s.jumlah} ${bahan ? bahan.satuan : ''}`.trim(),
-      tgl: toIso(d),
-      jam: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-      keterangan: s.catatan || 'Stok masuk',
-      nominal: s.harga,
-    };
-  });
-
-  const semua = [...DATA_PENDAPATAN, ...dataPengeluaran];
   const dataTampil = semua
     .filter((c) => cocok(c.tgl))
     .sort((a, b) => (b.tgl + b.jam).localeCompare(a.tgl + a.jam));
@@ -104,11 +121,7 @@ export default function LaporanScreen() {
   const saldo = pendapatan - pengeluaran;
 
   const dataRincian = dataTampil.filter((c) =>
-    filterJenis === 'Semua'
-      ? true
-      : filterJenis === 'Pemasukan'
-      ? c.jenis === 'masuk'
-      : c.jenis === 'keluar'
+    filterJenis === 'Semua' ? true : filterJenis === 'Pemasukan' ? c.jenis === 'masuk' : c.jenis === 'keluar'
   );
 
   const handleEkspor = () => {
@@ -183,34 +196,43 @@ export default function LaporanScreen() {
             ))}
           </View>
 
-          <FlatList
-            data={dataRincian}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <Text style={styles.kosong}>Belum ada catatan di periode ini.</Text>
-            }
-            renderItem={({ item }) => {
-              const masuk = item.jenis === 'masuk';
-              return (
-                <View style={styles.kartuTrx}>
-                  <View style={[styles.trxBadge, { backgroundColor: masuk ? '#DDF3E0' : '#FBE0E0' }]}>
-                    <Text style={[styles.trxBadgeText, { color: masuk ? '#2E7D32' : '#C62828' }]}>
-                      {masuk ? 'IN' : 'OUT'}
+          {memuat ? (
+            <ActivityIndicator color="#8B5A3C" style={{ marginTop: 20 }} />
+          ) : (
+            <FlatList
+              data={dataRincian}
+              keyExtractor={(item) => item.id}
+              ListHeaderComponent={
+                gagal ? (
+                  <Text style={styles.kosong}>Gagal memuat laporan. Periksa koneksi internet.</Text>
+                ) : null
+              }
+              ListEmptyComponent={
+                gagal ? null : <Text style={styles.kosong}>Belum ada catatan di periode ini.</Text>
+              }
+              renderItem={({ item }) => {
+                const masuk = item.jenis === 'masuk';
+                return (
+                  <View style={styles.kartuTrx}>
+                    <View style={[styles.trxBadge, { backgroundColor: masuk ? '#DDF3E0' : '#FBE0E0' }]}>
+                      <Text style={[styles.trxBadgeText, { color: masuk ? '#2E7D32' : '#C62828' }]}>
+                        {masuk ? 'IN' : 'OUT'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.trxProduk} numberOfLines={2}>{item.judul}</Text>
+                      <Text style={styles.trxWaktu}>
+                        {item.tgl} · {item.jam} · {item.keterangan}
+                      </Text>
+                    </View>
+                    <Text style={[styles.trxTotal, { color: masuk ? '#2E7D32' : '#C62828' }]}>
+                      {masuk ? '+' : '-'}{formatRupiah(item.nominal)}
                     </Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.trxProduk}>{item.judul}</Text>
-                    <Text style={styles.trxWaktu}>
-                      {item.tgl} · {item.jam} · {item.keterangan}
-                    </Text>
-                  </View>
-                  <Text style={[styles.trxTotal, { color: masuk ? '#2E7D32' : '#C62828' }]}>
-                    {masuk ? '+' : '-'}{formatRupiah(item.nominal)}
-                  </Text>
-                </View>
-              );
-            }}
-          />
+                );
+              }}
+            />
+          )}
         </View>
       </SafeAreaView>
     </PageTemplate>

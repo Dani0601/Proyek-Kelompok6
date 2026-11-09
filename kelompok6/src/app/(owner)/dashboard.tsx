@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useFonts } from 'expo-font';
@@ -9,6 +10,16 @@ import {
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { useOrders } from '@/context/order-context';
+import { formatRupiah } from '@/context/produk-context';
+import {
+  jumlahPenjualan,
+  labelTren,
+  penjualanHarian,
+  produkTerlaris,
+  transaksiPadaTanggal,
+  useTransaksiDashboard,
+} from '@/lib/dashboard-data';
 
 const COLORS = {
   background: StickyMilkColors.cream,
@@ -31,20 +42,8 @@ const FONTS = {
   bodyBold: 'Nunito_700Bold',
 };
 
-const WEEKLY_SALES = [
-  { day: 'Sen', height: 40, color: COLORS.sand },
-  { day: 'Sel', height: 60, color: COLORS.sand },
-  { day: 'Rab', height: 50, color: COLORS.sand },
-  { day: 'Kam', height: 80, color: COLORS.caramel },
-  { day: 'Jum', height: 65, color: COLORS.sand },
-  { day: 'Sab', height: 95, color: COLORS.caramel },
-  { day: 'Min', height: 105, color: COLORS.brown },
-];
-
-const TOP_PRODUCTS = [
-  { id: 1, name: 'Sticky Milk Coklat', sold: 32 },
-  { id: 2, name: 'Smoothies Mangga', sold: 27 },
-];
+const TINGGI_MAKS = 105; // tinggi batang tertinggi pada grafik
+const TINGGI_MIN = 6;
 
 export default function DashboardScreen() {
   const [fontsLoaded] = useFonts({
@@ -54,13 +53,41 @@ export default function DashboardScreen() {
     Nunito_600SemiBold,
     Nunito_700Bold,
   });
+
+  const { pesanan, memuat: memuatPesanan } = useOrders();
+  const { transaksi, memuat, gagal, menyegarkan, segarkan } = useTransaksiDashboard();
+
+  const data = useMemo(() => {
+    const sekarang = new Date();
+    const kemarin = new Date(sekarang);
+    kemarin.setDate(kemarin.getDate() - 1);
+
+    const hariIni = transaksiPadaTanggal(transaksi, sekarang);
+    const totalHariIni = jumlahPenjualan(hariIni);
+    const totalKemarin = jumlahPenjualan(transaksiPadaTanggal(transaksi, kemarin));
+
+    return {
+      totalHariIni,
+      jumlahTransaksi: hariIni.length,
+      tren: labelTren(totalHariIni, totalKemarin),
+      mingguan: penjualanHarian(transaksi, 7, sekarang),
+      terlaris: produkTerlaris(transaksi, { hari: 7, batas: 5, acuan: sekarang }),
+    };
+  }, [transaksi]);
+
   if (!fontsLoaded) return null;
+
+  const pesananAktif = pesanan.filter((p) => p.status !== 'Siap').length;
+
+  const maks = Math.max(...data.mingguan.map((h) => h.total), 0);
+  const indeksTertinggi = maks > 0 ? data.mingguan.findIndex((h) => h.total === maks) : -1;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={menyegarkan} onRefresh={segarkan} />}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -73,22 +100,30 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {gagal && (
+          <View style={styles.notice}>
+            <Text style={styles.noticeText}>
+              Gagal memuat data penjualan. Tarik layar ke bawah untuk mencoba lagi.
+            </Text>
+          </View>
+        )}
+
         {/* Penjualan hari ini */}
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>Penjualan hari ini</Text>
-          <Text style={styles.heroValue}>Rp 1.250.000</Text>
-          <Text style={styles.heroTrend}>▲ 12% dari kemarin</Text>
+          <Text style={styles.heroValue}>{memuat ? '...' : formatRupiah(data.totalHariIni)}</Text>
+          <Text style={styles.heroTrend}>{memuat ? ' ' : data.tren}</Text>
         </View>
 
         {/* Statistik */}
         <View style={styles.statRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Transaksi</Text>
-            <Text style={styles.statValue}>48</Text>
+            <Text style={styles.statValue}>{memuat ? '...' : data.jumlahTransaksi}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Pesanan aktif</Text>
-            <Text style={styles.statValue}>7</Text>
+            <Text style={styles.statValue}>{memuatPesanan ? '...' : pesananAktif}</Text>
           </View>
         </View>
 
@@ -96,33 +131,41 @@ export default function DashboardScreen() {
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Penjualan 7 hari</Text>
           <View style={styles.chartRow}>
-            {WEEKLY_SALES.map((item) => (
-              <View key={item.day} style={styles.barColumn}>
-                <View style={styles.barArea}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { height: item.height, backgroundColor: item.color },
-                    ]}
-                  />
+            {data.mingguan.map((item, i) => {
+              const tinggi =
+                maks > 0 ? Math.max(TINGGI_MIN, Math.round((item.total / maks) * TINGGI_MAKS)) : TINGGI_MIN;
+              const warna =
+                i === data.mingguan.length - 1
+                  ? COLORS.brown
+                  : i === indeksTertinggi
+                  ? COLORS.caramel
+                  : COLORS.sand;
+              return (
+                <View key={item.tanggal} style={styles.barColumn}>
+                  <View style={styles.barArea}>
+                    <View style={[styles.bar, { height: tinggi, backgroundColor: warna }]} />
+                  </View>
+                  <Text style={styles.barLabel}>{item.label}</Text>
                 </View>
-                <Text style={styles.barLabel}>{item.day}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
         {/* Produk terlaris */}
         <Text style={styles.sectionTitle}>Produk terlaris</Text>
-        {TOP_PRODUCTS.map((item) => (
-          <View key={item.id} style={styles.topRow}>
+        {data.terlaris.map((item, i) => (
+          <View key={item.nama} style={styles.topRow}>
             <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>{item.id}</Text>
+              <Text style={styles.rankText}>{i + 1}</Text>
             </View>
-            <Text style={styles.topName}>{item.name}</Text>
-            <Text style={styles.topSold}>{item.sold} terjual</Text>
+            <Text style={styles.topName}>{item.nama}</Text>
+            <Text style={styles.topSold}>{item.terjual} terjual</Text>
           </View>
         ))}
+        {!memuat && data.terlaris.length === 0 && (
+          <Text style={styles.emptyText}>Belum ada penjualan dalam 7 hari terakhir.</Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -158,6 +201,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.brown,
   },
+
+  notice: {
+    backgroundColor: '#FDECC8',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+  noticeText: { fontFamily: FONTS.body, fontSize: 12, color: '#9A6700' },
 
   heroCard: {
     backgroundColor: COLORS.brown,
@@ -261,4 +313,5 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
   },
   topSold: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textMuted },
+  emptyText: { fontFamily: FONTS.body, fontSize: 13, color: COLORS.textMuted },
 });

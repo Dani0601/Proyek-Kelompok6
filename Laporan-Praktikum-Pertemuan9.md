@@ -18,6 +18,13 @@
   4. **Istafty Keva Yuftika:** Riwayat Transaksi dan Laporan — CRUD Riwayat Transaksi Penjualan, Cetak Struk, & Laporan Penjualan / Omzet Owner
 
 ---
+## Video Flow Semua CRUD
+Drive :
+
+[https://drive.google.com/drive/folders/1TtjJQueKESJhwo3SAZsUgCH31Ep1k3WB](https://drive.google.com/drive/folders/1TtjJQueKESJhwo3SAZsUgCH31Ep1k3WB)
+
+Youtube :
+[![FLOW CRUD STICKY MILK](https://img.youtube.com/vi/7iOmWSdxLyE/maxresdefault.jpg)](https://youtu.be/7iOmWSdxLyE "FLOW CRUD STICKY MILK")
 
 ## 1. Tujuan dan Capaian Praktikum
 

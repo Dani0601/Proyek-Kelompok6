@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -10,6 +10,8 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAuth } from '@/context/auth-context';
+
 const { width } = Dimensions.get('window');
 
 const DURATION_LOGO    = 800;   // fade+scale logo
@@ -17,17 +19,25 @@ const DURATION_TAGLINE = 500;   // fade tagline
 const DURATION_BAR     = 1400;  // loading bar fill
 const HOLD             = 400;   // jeda sebelum navigasi
 
+// Splash hanya tampil sekali per aplikasi dibuka. Setelah login/keluar, penjaga rute
+// melewati layar ini lagi, dan saat itu pengguna langsung diarahkan tanpa animasi.
+let splashSudahTampil = false;
+
 export default function SplashScreen() {
   const router = useRouter();
+  const { profil, memuat } = useAuth();
+  const [animasiSelesai, setAnimasiSelesai] = useState(splashSudahTampil);
 
   // animated values
   const logoOpacity   = useRef(new Animated.Value(0)).current;
   const logoScale     = useRef(new Animated.Value(0.6)).current;
   const taglineOp     = useRef(new Animated.Value(0)).current;
   const barWidth      = useRef(new Animated.Value(0)).current;
-  const screenOpacity = useRef(new Animated.Value(1)).current;
+  const screenOpacity = useRef(new Animated.Value(splashSudahTampil ? 0 : 1)).current;
 
   useEffect(() => {
+    if (splashSudahTampil) return;
+
     Animated.sequence([
       // 1. Logo muncul (fade + scale)
       Animated.parallel([
@@ -68,9 +78,18 @@ export default function SplashScreen() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.replace('/login');
+      splashSudahTampil = true;
+      setAnimasiSelesai(true);
     });
   }, []);
+
+  // Setelah animasi selesai DAN sesi tersimpan selesai dicek, arahkan menurut profil
+  useEffect(() => {
+    if (!animasiSelesai || memuat) return;
+    if (!profil) router.replace('/login');
+    else if (profil.role === 'owner') router.replace('/(owner)/dashboard');
+    else router.replace('/(kasir)/dashboard');
+  }, [animasiSelesai, memuat, profil]);
 
   return (
     <Animated.View style={[styles.container, { opacity: screenOpacity }]}>

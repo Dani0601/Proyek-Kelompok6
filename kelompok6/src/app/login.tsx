@@ -2,79 +2,34 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import AppButton from '@/components/atoms/AppButton';
-import AppInput from '@/components/atoms/AppInput';
 import { StickyMilkFonts } from '@/constants/design-tokens';
-
-// Data dummy akun (sementara sebelum integrasi backend)
-const DUMMY_USERS = [
-  {
-    username: 'owner',
-    email: 'owner@stickymilk.id',
-    password: 'password123',
-    role: 'owner' as const,
-    route: '/(owner)/dashboard' as const,
-  },
-  {
-    username: 'kasir',
-    email: 'kasir@stickymilk.id',
-    password: 'password123',
-    role: 'kasir' as const,
-    route: '/(kasir)/dashboard' as const,
-  },
-];
+import { useAuth } from '@/context/auth-context';
 
 export default function LoginScreen() {
-  const router = useRouter();
+  const { masukDenganGoogle } = useAuth();
 
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string; general?: string }>({});
-  const [focusedField, setFocusedField] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
-    const trimmedIdentifier = identifier.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-    const newErrors: { identifier?: string; password?: string; general?: string } = {};
-
-    if (!trimmedIdentifier) {
-      newErrors.identifier = 'Email atau username wajib diisi.';
-    }
-
-    if (!trimmedPassword) {
-      newErrors.password = 'Password wajib diisi.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    // Validasi dengan data dummy
-    const user = DUMMY_USERS.find(
-      (u) =>
-        (u.email.toLowerCase() === trimmedIdentifier || u.username.toLowerCase() === trimmedIdentifier) &&
-        u.password === trimmedPassword
-    );
-
-    if (user) {
-      setErrors({});
-      router.replace(user.route);
-    } else {
-      setErrors({
-        general: 'Email/username atau password salah. Silakan coba lagi.',
-      });
+  const handleMasuk = async () => {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      // berhasil -> penjaga rute di _layout.tsx memindahkan ke dashboard sesuai role
+      await masukDenganGoogle();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal masuk. Coba lagi.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,162 +45,45 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <View style={styles.logo}>
-            <Ionicons
-              name="cafe"
-              size={42}
-              color="#FFFFFF"
-            />
+            <Ionicons name="cafe" size={42} color="#FFFFFF" />
           </View>
 
           <Text style={styles.brand}>Sticky Milk</Text>
-          <Text style={styles.tagline}>
-            Fresh Drinks, Happy Moments
-          </Text>
+          <Text style={styles.tagline}>Fresh Drinks, Happy Moments</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.title}>Selamat Datang!</Text>
           <Text style={styles.subtitle}>
-            Masuk untuk mengakses sistem kasir & manajemen Sticky Milk.
+            Masuk dengan akun Google untuk mengakses sistem kasir & manajemen Sticky Milk.
+            Hanya email yang sudah didaftarkan owner yang dapat masuk.
           </Text>
 
-          {errors.general ? (
+          {error ? (
             <View style={styles.generalErrorBanner}>
               <Ionicons name="alert-circle-outline" size={18} color="#D93025" />
-              <Text style={styles.generalErrorText}>{errors.general}</Text>
+              <Text style={styles.generalErrorText}>{error}</Text>
             </View>
           ) : null}
 
-          <Text style={styles.label}>Email atau Username</Text>
-
-          <View
-            style={[
-              styles.inputContainer,
-              focusedField === 'identifier' && styles.inputFocused,
-              (errors.identifier || errors.general) && styles.inputError,
-            ]}
+          <AppButton
+            style={styles.loginButton}
+            onPress={handleMasuk}
+            disabled={loading}
+            accessibilityLabel="Masuk dengan Google"
           >
-            <Ionicons
-              name="person-outline"
-              size={20}
-              color="#8A8A8A"
-            />
-
-            <AppInput
-              style={styles.input}
-              placeholder="Masukkan email atau username"
-              placeholderTextColor="#A0A0A0"
-              value={identifier}
-              onChangeText={(value: string) => {
-                setIdentifier(value);
-                if (errors.identifier || errors.general) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    identifier: '',
-                    general: '',
-                  }));
-                }
-              }}
-              onFocus={() => setFocusedField('identifier')}
-              onBlur={() => setFocusedField('')}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="next"
-              accessibilityLabel="Email atau Username"
-              invalid={!!errors.identifier}
-            />
-          </View>
-
-          {errors.identifier ? (
-            <Text style={styles.errorText}>{errors.identifier}</Text>
-          ) : null}
-
-          <Text style={styles.label}>Password</Text>
-
-          <View
-            style={[
-              styles.inputContainer,
-              focusedField === 'password' && styles.inputFocused,
-              (errors.password || errors.general) && styles.inputError,
-            ]}
-          >
-            <Ionicons
-              name="lock-closed-outline"
-              size={20}
-              color="#8A8A8A"
-            />
-
-            <AppInput
-              style={styles.input}
-              placeholder="Masukkan password"
-              placeholderTextColor="#A0A0A0"
-              value={password}
-              onChangeText={(value: string) => {
-                setPassword(value);
-                if (errors.password || errors.general) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    password: '',
-                    general: '',
-                  }));
-                }
-              }}
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField('')}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={handleLogin}
-              accessibilityLabel="Password"
-              invalid={!!errors.password}
-            />
-
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              accessibilityRole="button"
-              accessibilityLabel={
-                showPassword
-                  ? 'Sembunyikan password'
-                  : 'Tampilkan password'
-              }
-            >
-              <Ionicons
-                name={
-                  showPassword ? 'eye-off-outline' : 'eye-outline'
-                }
-                size={21}
-                color="#8A8A8A"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {errors.password ? (
-            <Text style={styles.errorText}>
-              {errors.password}
-            </Text>
-          ) : null}
-
-          <TouchableOpacity
-            style={styles.forgotButton}
-            onPress={() =>
-              Alert.alert(
-                'Lupa Password',
-                'Fitur ini belum tersedia pada versi UTS. Silakan gunakan kredensial demo.'
-              )
-            }
-          >
-            <Text style={styles.forgotText}>Lupa password?</Text>
-          </TouchableOpacity>
-
-          <AppButton style={styles.loginButton} onPress={handleLogin} accessibilityLabel="Masuk">
-            <Text style={styles.loginButtonText}>Masuk</Text>
-            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={20} color="#FFFFFF" />
+                <Text style={styles.loginButtonText}>Masuk dengan Google</Text>
+              </>
+            )}
           </AppButton>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Sistem Informasi Penjualan
-            </Text>
+            <Text style={styles.footerText}>Sistem Informasi Penjualan</Text>
             <Text style={styles.footerBrand}>Sticky Milk © 2026</Text>
           </View>
         </View>
@@ -313,45 +151,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 25,
   },
-  label: {
-    fontFamily: StickyMilkFonts.bodyBold,
-    fontSize: 14,
-    color: '#4D3A2D',
-    marginBottom: 9,
-    marginTop: 12,
-  },
-  inputContainer: {
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E8DED4',
-    borderRadius: 13,
-    paddingHorizontal: 14,
-    backgroundColor: '#FFFCF9',
-  },
-  inputFocused: {
-    borderColor: '#8B5E3C',
-    borderWidth: 1.5,
-  },
-  inputError: {
-    borderColor: '#D93025',
-  },
-  input: {
-    flex: 1,
-    minWidth: 0,
-    fontFamily: StickyMilkFonts.body,
-    fontSize: 14,
-    color: '#3D2A1F',
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-  },
-  errorText: {
-    fontFamily: StickyMilkFonts.body,
-    color: '#D93025',
-    fontSize: 12,
-    marginTop: 6,
-  },
   generalErrorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,58 +168,6 @@ const styles = StyleSheet.create({
     fontFamily: StickyMilkFonts.body,
     fontSize: 13,
     color: '#D93025',
-  },
-  demoBox: {
-    marginTop: 20,
-    backgroundColor: '#FAF5EE',
-    borderWidth: 1,
-    borderColor: '#EFE3D3',
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
-  },
-  demoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  demoTitle: {
-    fontFamily: StickyMilkFonts.bodyBold,
-    fontSize: 12,
-    color: '#8B5E3C',
-  },
-  demoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8DED4',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  demoItemRole: {
-    fontFamily: StickyMilkFonts.bodyBold,
-    fontSize: 12,
-    color: '#5B3925',
-  },
-  demoItemCred: {
-    fontFamily: StickyMilkFonts.body,
-    fontSize: 12,
-    color: '#8B5E3C',
-  },
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: 14,
-    marginBottom: 22,
-    paddingVertical: 4,
-  },
-  forgotText: {
-    fontFamily: StickyMilkFonts.bodySemi,
-    fontSize: 13,
-    color: '#8B5E3C',
   },
   loginButton: {
     minHeight: 54,

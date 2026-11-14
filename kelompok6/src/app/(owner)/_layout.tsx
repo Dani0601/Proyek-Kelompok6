@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { KasirProvider } from '@/context/kasir-context';
 
 const COLORS = {
   brown: StickyMilkColors.primary,
@@ -17,6 +18,7 @@ const styles = StyleSheet.create({
 
 export default function OwnerTabsLayout() {
   return (
+    <KasirProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -88,6 +90,17 @@ export default function OwnerTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="manajemen-kasir"
+        options={{
+          title: 'Kasir',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" color={color as string} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tambah-kasir"
+        options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
         name="profil"
         options={{
           title: 'Profil',
@@ -95,5 +108,6 @@ export default function OwnerTabsLayout() {
         }}
       />
     </Tabs>
+    </KasirProvider>
   );
 }

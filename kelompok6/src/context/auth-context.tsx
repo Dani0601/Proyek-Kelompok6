@@ -121,7 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const masukDenganGoogle = useCallback(async () => {
     // Expo Go: exp://192.168.x.x:8081/--/auth/callback, dev build: kelompok6://auth/callback
     const redirectTo = Linking.createURL('auth/callback');
+<<<<<<< HEAD
     alert(redirectTo);
+=======
+
+>>>>>>> dc9b848ddc4cec78688a502a7da9a6e99c0de9df
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo, skipBrowserRedirect: true },

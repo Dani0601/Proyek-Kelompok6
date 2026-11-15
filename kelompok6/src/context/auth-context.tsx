@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -29,6 +29,9 @@ type AuthContextType = {
   profil: Profil | null; // null = belum masuk
   memuat: boolean; // true selama sesi awal dicek
   masukDenganGoogle: () => Promise<void>; // throw Error(pesan) bila gagal / email tidak terdaftar
+  /** Pesan gagal masuk yang datang lewat deep link (Android); ditampilkan oleh layar login. */
+  galatLogin: string | null;
+  bersihkanGalat: () => void;
   keluar: () => Promise<void>;
 };
 
@@ -94,6 +97,7 @@ async function cekPengguna(session: Session): Promise<HasilCek> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profil, setProfil] = useState<Profil | null>(null);
   const [memuat, setMemuat] = useState(true);
+  const [galatLogin, setGalatLogin] = useState<string | null>(null);
 
   // Saat aplikasi dibuka: cek sesi tersimpan, lalu cek ulang emailnya di tabel pengguna
   // (supaya kasir yang dinonaktifkan tidak lolos dengan sesi lama).
@@ -175,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!url || !url.includes('auth/callback')) return;
       if (!url.includes('access_token') && !url.includes('code=')) return;
       masukDariUrl(url).catch((e) =>
-        Alert.alert('Gagal masuk', e instanceof Error ? e.message : 'Coba lagi.')
+        setGalatLogin(e instanceof Error ? e.message : 'Coba lagi.')
       );
     };
 
@@ -212,14 +216,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // yang memprosesnya; bila tidak, pengguna tetap di layar login.
   }, [masukDariUrl]);
 
+  const bersihkanGalat = useCallback(() => setGalatLogin(null), []);
+
   const keluar = useCallback(async () => {
     await supabase.auth.signOut({ scope: 'local' }); // hanya perangkat ini
     setProfil(null);
   }, []);
 
   const value = useMemo(
-    () => ({ profil, memuat, masukDenganGoogle, keluar }),
-    [profil, memuat, masukDenganGoogle, keluar]
+    () => ({ profil, memuat, masukDenganGoogle, galatLogin, bersihkanGalat, keluar }),
+    [profil, memuat, masukDenganGoogle, galatLogin, bersihkanGalat, keluar]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,17 +4,19 @@ import {
   Text,
   StyleSheet,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppButton from '@/components/atoms/AppButton';
-import { StickyMilkFonts } from '@/constants/design-tokens';
+import { StickyMilkColors, StickyMilkFonts } from '@/constants/design-tokens';
 import { useAuth } from '@/context/auth-context';
 
 export default function LoginScreen() {
-  const { masukDenganGoogle } = useAuth();
+  const { masukDenganGoogle, galatLogin, bersihkanGalat } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,13 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // pesan dari proses login langsung (error) atau dari deep link (galatLogin)
+  const pesanGagal = error ?? galatLogin;
+  const tutupDialog = () => {
+    setError(null);
+    bersihkanGalat();
   };
 
   return (
@@ -59,13 +68,6 @@ export default function LoginScreen() {
             Hanya email yang sudah didaftarkan owner yang dapat masuk.
           </Text>
 
-          {error ? (
-            <View style={styles.generalErrorBanner}>
-              <Ionicons name="alert-circle-outline" size={18} color="#D93025" />
-              <Text style={styles.generalErrorText}>{error}</Text>
-            </View>
-          ) : null}
-
           <AppButton
             style={styles.loginButton}
             onPress={handleMasuk}
@@ -88,6 +90,27 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Dialog gagal masuk (gaya sama dengan dialog hapus di halaman Produk) */}
+      <Modal
+        transparent
+        visible={!!pesanGagal}
+        animationType="fade"
+        onRequestClose={tutupDialog}
+      >
+        <View style={dlg.overlay}>
+          <View style={dlg.dialog}>
+            <View style={dlg.icon}>
+              <Ionicons name="alert-circle-outline" size={24} color={StickyMilkColors.danger} />
+            </View>
+            <Text style={dlg.title}>Gagal masuk</Text>
+            <Text style={dlg.text}>{pesanGagal}</Text>
+            <TouchableOpacity style={dlg.button} activeOpacity={0.85} onPress={tutupDialog}>
+              <Text style={dlg.buttonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -151,24 +174,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 25,
   },
-  generalErrorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FDE8E8',
-    borderColor: '#F8B4B4',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    gap: 8,
-  },
-  generalErrorText: {
-    flex: 1,
-    fontFamily: StickyMilkFonts.body,
-    fontSize: 13,
-    color: '#D93025',
-  },
   loginButton: {
     minHeight: 54,
     backgroundColor: '#8B5E3C',
@@ -198,4 +203,14 @@ const styles = StyleSheet.create({
     color: '#B2A397',
     marginTop: 5,
   },
+});
+
+const dlg = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: StickyMilkColors.overlay, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  dialog: { width: '100%', backgroundColor: StickyMilkColors.cream, borderRadius: 24, padding: 24, alignItems: 'center' },
+  icon: { width: 52, height: 52, borderRadius: 26, backgroundColor: StickyMilkColors.dangerSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  title: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: StickyMilkColors.textDark, marginBottom: 6, textAlign: 'center' },
+  text: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: StickyMilkColors.textMuted, textAlign: 'center', marginBottom: 20 },
+  button: { width: '100%', height: 50, borderRadius: 25, backgroundColor: StickyMilkColors.primary, alignItems: 'center', justifyContent: 'center' },
+  buttonText: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: '#FFFFFF' },
 });

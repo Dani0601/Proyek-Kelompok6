@@ -1,5 +1,4 @@
-import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -9,6 +8,7 @@ import { Nunito_400Regular, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import AppButton from '@/components/atoms/AppButton';
 import PageTemplate from '@/components/templates/PageTemplate';
 import { DesignTokens } from '@/constants/design-tokens';
+import { useAuth } from '@/context/auth-context';
 
 const C = DesignTokens.color;
 
@@ -19,13 +19,6 @@ const FONTS = {
 };
 
 const APP_VERSION = '1.0.0';
-
-// Data akun (ganti dengan data login asli kalau sudah ada)
-const AKUN = {
-  nama: 'Kasir Sticky Milk',
-  email: 'kasir@stickymilk.id',
-  peran: 'Kasir',
-};
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -58,19 +51,15 @@ function MenuRow({ item }: { item: MenuItem }) {
 }
 
 export default function ProfilScreen() {
-  const router = useRouter();
+  const { profil, keluar } = useAuth();
   const [fontsLoaded] = useFonts({ Poppins_700Bold, Nunito_400Regular, Nunito_700Bold });
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !profil) return null;
+
+  const nama = profil.nama?.trim() || profil.email.split('@')[0];
+  const peran = profil.role === 'owner' ? 'Owner' : 'Kasir';
 
   // TODO: sambungkan onPress ke halaman masing-masing kalau sudah dibuat
   const menu: MenuItem[] = [
-    {
-      id: 'password',
-      icon: 'lock-closed-outline',
-      title: 'Ubah Password',
-      subtitle: 'Ganti kata sandi akun',
-      onPress: () => {},
-    },
     {
       id: 'tentang',
       icon: 'information-circle-outline',
@@ -80,7 +69,10 @@ export default function ProfilScreen() {
     },
   ];
 
-  const handleKeluar = () => router.replace('/login');
+  // Setelah keluar(), profil jadi null dan Stack.Protected mengembalikan ke login.
+  const handleKeluar = async () => {
+    await keluar();
+  };
 
   return (
     <PageTemplate>
@@ -94,13 +86,17 @@ export default function ProfilScreen() {
 
           {/* Kartu identitas */}
           <View style={styles.profileCard}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{AKUN.nama.charAt(0).toUpperCase()}</Text>
-            </View>
-            <Text style={styles.name}>{AKUN.nama}</Text>
-            <Text style={styles.email}>{AKUN.email}</Text>
+            {profil.fotoUrl ? (
+              <Image source={{ uri: profil.fotoUrl }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{nama.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <Text style={styles.name}>{nama}</Text>
+            <Text style={styles.email}>{profil.email}</Text>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{AKUN.peran}</Text>
+              <Text style={styles.roleText}>{peran}</Text>
             </View>
           </View>
 
@@ -154,6 +150,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.thumb,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 68,
+    height: 68,
+    borderRadius: DesignTokens.radius.pill,
   },
   avatarText: { fontFamily: FONTS.heading, fontSize: 28, color: C.primary },
   name: { fontFamily: FONTS.heading, fontSize: 20, color: C.text, marginTop: 12 },

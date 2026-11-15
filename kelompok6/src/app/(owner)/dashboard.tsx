@@ -10,6 +10,7 @@ import {
   Nunito_700Bold,
 } from '@expo-google-fonts/nunito';
 import { StickyMilkColors } from '@/constants/design-tokens';
+import { useAuth } from '@/context/auth-context';
 import { useOrders } from '@/context/order-context';
 import { formatRupiah } from '@/context/produk-context';
 import {
@@ -54,6 +55,7 @@ export default function DashboardScreen() {
     Nunito_700Bold,
   });
 
+  const { profil } = useAuth();
   const { pesanan, memuat: memuatPesanan } = useOrders();
   const { transaksi, memuat, gagal, menyegarkan, segarkan } = useTransaksiDashboard();
 
@@ -77,6 +79,9 @@ export default function DashboardScreen() {
 
   if (!fontsLoaded) return null;
 
+  // Nama depan dari akun yang sedang masuk; cadangan "Owner" bila nama kosong
+  const namaDepan = profil?.nama?.trim().split(/\s+/)[0] || 'Owner';
+
   const pesananAktif = pesanan.filter((p) => p.status !== 'Siap').length;
 
   const maks = Math.max(...data.mingguan.map((h) => h.total), 0);
@@ -92,11 +97,11 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Halo, Owner 👋</Text>
+            <Text style={styles.greeting}>Halo, {namaDepan} 👋</Text>
             <Text style={styles.title}>Dashboard</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>A</Text>
+            <Text style={styles.avatarText}>{namaDepan.charAt(0).toUpperCase()}</Text>
           </View>
         </View>
 

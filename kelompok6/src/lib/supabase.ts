@@ -12,6 +12,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false, // token dibaca manual di auth-context
+    // Native memakai PKCE (kode ?code=) supaya bisa lewat proxy Expo; web tetap seperti sebelumnya
+    flowType: Platform.OS === 'web' ? 'implicit' : 'pkce',
   },
 });
 

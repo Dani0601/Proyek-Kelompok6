@@ -4,9 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
+import { Alert, Platform } from 'react-native';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
@@ -15,6 +18,9 @@ import { supabase } from '@/lib/supabase';
 
 // diperlukan agar jendela login Google bisa menutup sendiri; aman dipanggil di HP
 WebBrowser.maybeCompleteAuthSession();
+
+// Proxy Expo untuk login Google di Expo Go. Ganti @anonymous bila terlogin di Expo (npx expo whoami).
+const PROXY_URL = 'https://auth.expo.io/@anonymous/kelompok6';
 
 export type Role = 'owner' | 'kasir';
 export type Profil = { email: string; nama: string; role: Role; fotoUrl?: string };
@@ -95,16 +101,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let aktif = true;
 
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        const hasil = await cekPengguna(data.session);
-        if (hasil.status === 'tidak-terdaftar') {
-          await supabase.auth.signOut({ scope: 'local' });
-        } else if (hasil.status === 'ok' && aktif) {
-          setProfil(hasil.profil);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          const hasil = await cekPengguna(data.session);
+          if (hasil.status === 'tidak-terdaftar') {
+            await supabase.auth.signOut({ scope: 'local' });
+          } else if (hasil.status === 'ok' && aktif) {
+            setProfil(hasil.profil);
+          }
         }
+      } catch {
+        // gagal membaca sesi: anggap belum masuk
+      } finally {
+        if (aktif) setMemuat(false);
       }
-      if (aktif) setMemuat(false);
     })();
 
     // jangan memanggil database di sini; cukup bereaksi saat sesi berakhir
@@ -118,24 +129,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const masukDenganGoogle = useCallback(async () => {
-    // Expo Go: exp://192.168.x.x:8081/--/auth/callback, dev build: kelompok6://auth/callback
-    const redirectTo = Linking.createURL('auth/callback');
-<<<<<<< HEAD
-    alert(redirectTo);
-=======
+  // Alamat yang sudah diproses, supaya URL yang sama tidak diproses dua kali
+  // (bisa datang dari hasil openAuthSessionAsync DAN dari Linking).
+  const urlDiproses = useRef<string | null>(null);
 
->>>>>>> dc9b848ddc4cec78688a502a7da9a6e99c0de9df
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (error || !data?.url) throw new Error('Gagal membuka login Google. Coba lagi.');
+  /** Ubah URL balik dari Google/Supabase menjadi sesi, lalu cek emailnya di tabel pengguna. */
+  const masukDariUrl = useCallback(async (url: string) => {
+    if (urlDiproses.current === url) return;
+    urlDiproses.current = url;
 
-    const hasil = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (hasil.type !== 'success' || !hasil.url) return; // jendela ditutup pengguna
-
-    const param = bacaParam(hasil.url);
+    const param = bacaParam(url);
     if (param.error || param.error_description) return; // ditolak/dibatalkan: kembali ke login
 
     let session: Session | null = null;
@@ -164,6 +167,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setProfil(cek.profil);
   }, []);
+
+  // Di Android, alamat balik sering datang lewat Linking (deep link) sementara
+  // openAuthSessionAsync hanya mengembalikan "dismiss". Tangkap di sini juga.
+  useEffect(() => {
+    const tangani = (url: string | null) => {
+      if (!url || !url.includes('auth/callback')) return;
+      if (!url.includes('access_token') && !url.includes('code=')) return;
+      masukDariUrl(url).catch((e) =>
+        Alert.alert('Gagal masuk', e instanceof Error ? e.message : 'Coba lagi.')
+      );
+    };
+
+    Linking.getInitialURL().then(tangani);
+    const sub = Linking.addEventListener('url', ({ url }) => tangani(url));
+    return () => sub.remove();
+  }, [masukDariUrl]);
+
+  const masukDenganGoogle = useCallback(async () => {
+    // Expo Go TIDAK bisa menerima redirect scheme custom (kelompok6://). Jalur yang dipakai di Expo Go
+    // adalah PROXY Expo (https://auth.expo.io): Supabase mengarahkan ke alamat https proxy, lalu proxy
+    // memantulkan hasilnya ke exp://... (Expo Go). Alamat proxy harus ada di Redirect URLs Supabase.
+    // Aplikasi hasil build / web memakai alamat langsung seperti biasa.
+    const hostUri = Constants.expoConfig?.hostUri; // mis. 192.168.1.5:8081 (hanya ada saat development)
+    const pakaiProxy = __DEV__ && !!hostUri && Platform.OS !== 'web';
+
+    const returnUrl = pakaiProxy
+      ? `exp://${hostUri}/--/auth/callback`
+      : Linking.createURL('auth/callback');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: pakaiProxy ? PROXY_URL : returnUrl, skipBrowserRedirect: true },
+    });
+    if (error || !data?.url) throw new Error('Gagal membuka login Google. Coba lagi.');
+
+    const urlBuka = pakaiProxy
+      ? `${PROXY_URL}/start?${new URLSearchParams({ authUrl: data.url, returnUrl }).toString()}`
+      : data.url;
+
+    const hasil = await WebBrowser.openAuthSessionAsync(urlBuka, returnUrl);
+    if (hasil.type === 'success' && hasil.url) await masukDariUrl(hasil.url);
+    // type lain (dismiss/cancel): bila alamat balik datang lewat Linking, useEffect di atas
+    // yang memprosesnya; bila tidak, pengguna tetap di layar login.
+  }, [masukDariUrl]);
 
   const keluar = useCallback(async () => {
     await supabase.auth.signOut({ scope: 'local' }); // hanya perangkat ini

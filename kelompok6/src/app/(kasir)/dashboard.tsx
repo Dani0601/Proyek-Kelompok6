@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
+import { useAuth } from '@/context/auth-context';
 import { useOrders, type StatusPesanan } from '@/context/order-context';
 import { formatRupiah } from '@/context/produk-context';
 import { jumlahPenjualan, transaksiPadaTanggal, useTransaksiDashboard } from '@/lib/dashboard-data';
@@ -18,8 +19,12 @@ const BATAS_ANTREAN = 5;
 
 export default function DashboardKasir() {
   const router = useRouter();
+  const { profil } = useAuth();
   const { pesanan, memuat: memuatPesanan } = useOrders();
   const { transaksi, memuat, gagal, menyegarkan, segarkan } = useTransaksiDashboard();
+
+  // Nama depan dari akun yang sedang masuk; cadangan "Kasir" bila nama kosong
+  const namaDepan = profil?.nama?.trim().split(/\s+/)[0] || 'Kasir';
 
   const hariIni = transaksiPadaTanggal(transaksi, new Date());
   const penjualanHariIni = jumlahPenjualan(hariIni);
@@ -38,11 +43,11 @@ export default function DashboardKasir() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.sapaan}>Halo, Kasir 👋</Text>
+            <Text style={styles.sapaan}>Halo, {namaDepan} 👋</Text>
             <Text style={styles.judul}>Dashboard</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>K</Text>
+            <Text style={styles.avatarText}>{namaDepan.charAt(0).toUpperCase()}</Text>
           </View>
         </View>
 

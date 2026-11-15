@@ -19,7 +19,6 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import AppButton from '@/components/atoms/AppButton';
 import AppInput from '@/components/atoms/AppInput';
 import { StickyMilkColors } from '@/constants/design-tokens';
-import { showAlert } from '@/utils/show-alert';
 import { useBahan } from '../../context/bahan-context';
 import { useProduk } from '../../context/produk-context';
 
@@ -49,6 +48,7 @@ function BahanForm({ bahanId }: { bahanId?: string }) {
   const [error, setError] = useState('');
   const [menyimpan, setMenyimpan] = useState(false);
   const [modalHapusVisible, setModalHapusVisible] = useState(false);
+  const [infoHapus, setInfoHapus] = useState(''); // pesan 'tidak bisa dihapus' (kosong = tertutup)
 
   if (!fontsLoaded) return null;
 
@@ -103,8 +103,7 @@ function BahanForm({ bahanId }: { bahanId?: string }) {
     if (!existingBahan) return;
 
     if (dipakaiDi.length > 0) {
-      showAlert(
-        'Bahan tidak bisa dihapus',
+      setInfoHapus(
         `"${existingBahan.nama}" masih dipakai di resep: ${dipakaiDi
           .map((p) => p.nama)
           .join(', ')}. Hapus dulu dari resep tersebut.`
@@ -235,40 +234,24 @@ function BahanForm({ bahanId }: { bahanId?: string }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal Kustom Konfirmasi Hapus */}
+      {/* Dialog konfirmasi hapus + info bahan masih dipakai (komponen seragam) */}
       {existingBahan && (
-        <Modal
-          transparent={true}
-          visible={modalHapusVisible}
-          animationType="fade"
-          onRequestClose={() => setModalHapusVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="trash-outline" size={28} color="#DC2626" />
-              </View>
-              <Text style={styles.modalTitle}>Hapus Bahan?</Text>
-              <Text style={styles.modalMessage}>
-                "{existingBahan.nama}" beserta riwayat pengadaannya akan dihapus permanen.
-              </Text>
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={styles.btnBatal}
-                  onPress={() => setModalHapusVisible(false)}
-                >
-                  <Text style={styles.btnBatalText}>Batal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.btnHapusModal}
-                  onPress={eksekusiHapus}
-                >
-                  <Text style={styles.btnHapusText}>Hapus</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <>
+          <DialogLokal
+            visible={modalHapusVisible}
+            title="Hapus bahan?"
+            message={`"${existingBahan.nama}" beserta riwayat pengadaannya akan dihapus permanen.`}
+            onClose={() => setModalHapusVisible(false)}
+            onConfirm={eksekusiHapus}
+          />
+          <DialogLokal
+            visible={infoHapus !== ''}
+            title="Bahan tidak bisa dihapus"
+            message={infoHapus}
+            icon="alert-circle-outline"
+            onClose={() => setInfoHapus('')}
+          />
+        </>
       )}
     </SafeAreaView>
   );
@@ -447,74 +430,67 @@ const styles = StyleSheet.create({
     color: StickyMilkColors.textMuted,
     marginBottom: 16,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 24,
-    width: '85%',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FEF2F2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 18,
-    color: StickyMilkColors.textDark,
-    marginBottom: 8,
-  },
-  modalMessage: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: StickyMilkColors.textMuted,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  btnBatal: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  btnBatalText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: StickyMilkColors.textDark,
-  },
-  btnHapusModal: {
-    flex: 1,
-    backgroundColor: '#DC2626',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  btnHapusText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: '#FFF',
-  },
+});
+
+/** Dialog lokal (kartu krem, tombol pil) — gaya sama dengan dialog hapus di halaman Produk. */
+function DialogLokal({
+  visible,
+  title,
+  message,
+  icon = 'trash-outline',
+  onClose,
+  onConfirm,
+  confirmLabel = 'Hapus',
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  onClose: () => void;
+  onConfirm?: () => void; // kosong = dialog info dengan satu tombol OK
+  confirmLabel?: string;
+}) {
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <View style={dlg.overlay}>
+        <View style={dlg.dialog}>
+          <View style={dlg.icon}>
+            <Ionicons name={icon} size={24} color={StickyMilkColors.danger} />
+          </View>
+          <Text style={dlg.title}>{title}</Text>
+          <Text style={dlg.text}>{message}</Text>
+          {onConfirm ? (
+            <View style={dlg.row}>
+              <TouchableOpacity style={[dlg.button, dlg.cancel]} activeOpacity={0.8} onPress={onClose}>
+                <Text style={dlg.cancelText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[dlg.button, dlg.danger]} activeOpacity={0.85} onPress={onConfirm}>
+                <Text style={dlg.buttonText}>{confirmLabel}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={[dlg.button, dlg.primary, dlg.full]} activeOpacity={0.85} onPress={onClose}>
+              <Text style={dlg.buttonText}>OK</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const dlg = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: StickyMilkColors.overlay, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  dialog: { width: '100%', backgroundColor: StickyMilkColors.cream, borderRadius: 24, padding: 24, alignItems: 'center' },
+  icon: { width: 52, height: 52, borderRadius: 26, backgroundColor: StickyMilkColors.dangerSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  title: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: StickyMilkColors.textDark, marginBottom: 6, textAlign: 'center' },
+  text: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: StickyMilkColors.textMuted, textAlign: 'center', marginBottom: 20 },
+  row: { flexDirection: 'row', gap: 12, width: '100%' },
+  button: { flex: 1, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  full: { width: '100%', flex: 0 },
+  cancel: { backgroundColor: StickyMilkColors.sand },
+  danger: { backgroundColor: StickyMilkColors.danger },
+  primary: { backgroundColor: StickyMilkColors.primary },
+  cancelText: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: StickyMilkColors.primary },
+  buttonText: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: '#FFFFFF' },
 });

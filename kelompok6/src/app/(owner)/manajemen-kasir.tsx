@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -19,7 +20,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import ProductList from '@/components/organisms/ProductList';
 import { StickyMilkColors } from '@/constants/design-tokens';
 import { useAuth } from '@/context/auth-context';
-import { showAlert, showConfirm } from '@/utils/show-alert';
+import { showAlert } from '@/utils/show-alert';
 import { useKasir, type Kasir } from '../../context/kasir-context';
 
 const COLORS = {
@@ -40,6 +41,7 @@ export default function ManajemenKasirScreen() {
   const { kasirList, memuat, galat, refreshKasir, ubahKasir, hapusKasir } = useKasir();
   const [refreshing, setRefreshing] = useState(false);
   const [sibuk, setSibuk] = useState<string | null>(null); // id akun yang sedang diproses
+  const [hapusTarget, setHapusTarget] = useState<Kasir | null>(null); // akun yang akan dihapus (modal konfirmasi)
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -75,21 +77,18 @@ export default function ManajemenKasirScreen() {
     }
   };
 
-  const konfirmasiHapus = (k: Kasir) => {
-    showConfirm(
-      'Hapus akun?',
-      `${k.email} tidak akan bisa masuk lagi ke aplikasi.`,
-      async () => {
-        setSibuk(k.id);
-        try {
-          await hapusKasir(k.id);
-        } catch (e) {
-          showAlert('Gagal', e instanceof Error ? e.message : 'Gagal menghapus akun.');
-        } finally {
-          setSibuk(null);
-        }
-      }
-    );
+  const eksekusiHapus = async () => {
+    const k = hapusTarget;
+    if (!k) return;
+    setHapusTarget(null);
+    setSibuk(k.id);
+    try {
+      await hapusKasir(k.id);
+    } catch (e) {
+      showAlert('Gagal', e instanceof Error ? e.message : 'Gagal menghapus akun.');
+    } finally {
+      setSibuk(null);
+    }
   };
 
   return (
@@ -177,7 +176,7 @@ export default function ManajemenKasirScreen() {
                           accessibilityLabel={`Aktifkan ${k.email}`}
                         />
                         <TouchableOpacity
-                          onPress={() => konfirmasiHapus(k)}
+                          onPress={() => setHapusTarget(k)}
                           style={styles.trashBtn}
                           activeOpacity={0.7}
                           accessibilityLabel={`Hapus ${k.email}`}
@@ -204,6 +203,42 @@ export default function ManajemenKasirScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Konfirmasi hapus (gaya sama dengan hapus produk) */}
+      <Modal
+        transparent
+        visible={hapusTarget !== null}
+        animationType="fade"
+        onRequestClose={() => setHapusTarget(null)}
+      >
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialog}>
+            <View style={styles.dialogIcon}>
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+            </View>
+            <Text style={styles.dialogTitle}>Hapus akun?</Text>
+            <Text style={styles.dialogText}>
+              {hapusTarget ? `"${hapusTarget.email}"` : ''} akan dihapus dan tidak bisa masuk lagi ke aplikasi.
+            </Text>
+            <View style={styles.dialogRow}>
+              <TouchableOpacity
+                style={[styles.sheetButton, styles.cancelButton]}
+                activeOpacity={0.8}
+                onPress={() => setHapusTarget(null)}
+              >
+                <Text style={styles.cancelText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sheetButton, styles.dangerButton]}
+                activeOpacity={0.85}
+                onPress={eksekusiHapus}
+              >
+                <Text style={styles.saveText}>Hapus</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -289,4 +324,41 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
   },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: StickyMilkColors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  dialog: {
+    width: '100%',
+    backgroundColor: StickyMilkColors.cream,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+  },
+  dialogIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: StickyMilkColors.dangerSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  dialogTitle: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: COLORS.textDark, marginBottom: 6 },
+  dialogText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  dialogRow: { flexDirection: 'row', gap: 12, width: '100%' },
+  sheetButton: { flex: 1, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  cancelButton: { backgroundColor: COLORS.sand },
+  dangerButton: { backgroundColor: COLORS.danger },
+  cancelText: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: COLORS.brown },
+  saveText: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: '#FFFFFF' },
 });

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { tandaiBasi } from '@/lib/segar';
 
 export interface Bahan {
   id: string;
@@ -178,6 +179,7 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
       p_catatan: catatan.trim() || null,
     });
     if (error) throw new Error(pesanError(error, 'Gagal mencatat stok masuk.'));
+    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
     await refreshBahan();
   };
 
@@ -192,12 +194,14 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
       p_catatan: (data.catatan ?? '').trim() || null,
     });
     if (error) throw new Error(pesanError(error, 'Gagal mengubah catatan pengadaan.'));
+    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
     await refreshBahan();
   };
 
   const hapusStokMasuk = async (id: string) => {
     const { error } = await supabase.rpc('hapus_stok_masuk', { p_id: id });
     if (error) throw new Error(pesanError(error, 'Gagal menghapus catatan pengadaan.'));
+    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
     await refreshBahan();
   };
 

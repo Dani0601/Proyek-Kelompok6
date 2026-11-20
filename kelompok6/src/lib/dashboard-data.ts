@@ -107,7 +107,7 @@ export function useTransaksiDashboard() {
 
   const segarkan = async () => {
     setMenyegarkan(true);
-    terapkan(await ambilTransaksi());
+    terapkan(await ambilTransaksi({ paksa: true }));
     setMenyegarkan(false);
   };
 

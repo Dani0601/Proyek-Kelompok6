@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider, useAuth } from '@/context/auth-context';
+import { tandaiBasiSemua } from '@/lib/segar';
 import { OrderProvider, useOrders } from '@/context/order-context';
 import { BahanProvider, useBahan } from '@/context/bahan-context';
 import { ProdukProvider, useProduk } from '@/context/produk-context';
@@ -25,6 +26,7 @@ function SinkronData() {
 
   useEffect(() => {
     if (!email) return;
+    tandaiBasiSemua(); // berganti akun: jangan pakai data akun sebelumnya
     segarkanPesanan();
     refreshBahan();
     segarkanProduk();

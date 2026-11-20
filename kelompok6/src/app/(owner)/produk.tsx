@@ -23,6 +23,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import { DesignTokens } from '@/constants/design-tokens';
 import { priceLabel, useProduk, type Kategori, type Produk } from '@/context/produk-context';
 import { supabase } from '@/lib/supabase';
+import { sudahSegar } from '@/lib/segar';
 
 const COLORS = {
   background: DesignTokens.color.cream,
@@ -74,7 +75,8 @@ export default function ProdukScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      refresh();
+      // data baru diambil kurang dari 30 detik lalu (mis. saat login): tidak perlu diambil lagi
+      if (!sudahSegar('produk')) refresh();
     }, [refresh])
   );
 

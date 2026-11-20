@@ -20,6 +20,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import ProductList from '@/components/organisms/ProductList';
 import { StickyMilkColors } from '@/constants/design-tokens';
 import { useAuth } from '@/context/auth-context';
+import { sudahSegar } from '@/lib/segar';
 import { showAlert } from '@/utils/show-alert';
 import { useKasir, type Kasir } from '../../context/kasir-context';
 
@@ -54,7 +55,7 @@ export default function ManajemenKasirScreen() {
   // layar tab tetap hidup di belakang, jadi muat ulang setiap kali tab dibuka
   useFocusEffect(
     useCallback(() => {
-      refreshKasir();
+      if (!sudahSegar('kasir')) refreshKasir();
     }, [refreshKasir])
   );
 

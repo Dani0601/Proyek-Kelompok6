@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import type { ImageSourcePropType } from 'react-native';
 import { File } from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
+import { tandaiSegar } from '@/lib/segar';
 import { DesignTokens } from '@/constants/design-tokens';
 
 export type Kategori = 'Minuman' | 'Topping';
@@ -84,7 +85,10 @@ export function ProdukProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setMemuat(true);
     const { data, error } = await supabase.from('produk').select('*').order('created_at', { ascending: true });
-    if (!error && data) setProdukList((data as ProdukRow[]).map(keProduk));
+    if (!error && data) {
+      setProdukList((data as ProdukRow[]).map(keProduk));
+      tandaiSegar('produk');
+    }
     setMemuat(false);
   }, []);
 

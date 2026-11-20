@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { tandaiSegar } from '@/lib/segar';
 import type { Role } from '@/context/auth-context';
 
 /** Satu akun di tabel `pengguna` (kasir maupun owner). */
@@ -74,6 +75,7 @@ export function KasirProvider({ children }: { children: React.ReactNode }) {
       } else {
         setKasirList(((data ?? []) as PenggunaRow[]).map(keKasir));
         setGalat(null);
+        tandaiSegar('kasir');
       }
     } catch (e) {
       setGalat(pesanError(e as Error, 'Tidak dapat terhubung ke Supabase.'));

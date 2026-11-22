@@ -308,6 +308,17 @@ Kontrak ini milik tim. Bila Dimas atau Alfiah perlu mengubah tipe, kabari Istaft
 
 **Bukti:** keluaran tiga kondisi data (tabel kecil), contoh `BarisEvaluasi`, tangkapan layar uji fallback.
 
+<table style="width: 100%; border: none;">
+  <tr>
+    <td style="width: 50%; text-align: center; padding: 5px;">
+      <img src="bukti-forecast-uji.jpeg" width="100%">
+    </td>
+    <td style="width: 50%; text-align: center; padding: 5px;">
+      <img src="bukti-forecast-contoh-output.jpeg" width="100%">
+    </td>
+  </tr>
+</table>
+
 ---
 
 ### 5.4 Istafty — Tampilan Owner, Pengujian di Perangkat, dan Field Check

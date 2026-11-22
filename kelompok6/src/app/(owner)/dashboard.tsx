@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import PerkiraanPenjualan from '@/components/organisms/PerkiraanPenjualan';
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import {
@@ -171,6 +171,7 @@ export default function DashboardScreen() {
         {!memuat && data.terlaris.length === 0 && (
           <Text style={styles.emptyText}>Belum ada penjualan dalam 7 hari terakhir.</Text>
         )}
+        <PerkiraanPenjualan transaksi={transaksi} memuat={memuat} />
       </ScrollView>
     </SafeAreaView>
   );

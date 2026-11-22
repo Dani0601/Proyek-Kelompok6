@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 
 import PageTemplate from '@/components/templates/PageTemplate';
+import PerkiraanVsKenyataan from '@/components/organisms/PerkiraanVsKenyataan';
 import { ambilTransaksi, ambilStokMasuk } from '@/lib/transaksi-api';
+import type { DetailTransaksi } from '@/utils/detail-transaksi';
 
 type Mode = 'Tanggal' | 'Bulan' | 'Tahun';
 const MODE: Mode[] = ['Tanggal', 'Bulan', 'Tahun'];
@@ -39,6 +41,8 @@ const jamDari = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 export default function LaporanScreen() {
   const [semua, setSemua] = useState<Catatan[]>([]);
+  // transaksi mentah, dipakai bagian "Perkiraan vs Kenyataan" (tanpa permintaan tambahan ke Supabase)
+  const [trxMentah, setTrxMentah] = useState<DetailTransaksi[]>([]);
   const [memuat, setMemuat] = useState(true);
   const [gagal, setGagal] = useState(false);
 
@@ -82,6 +86,7 @@ export default function LaporanScreen() {
             };
           });
           setSemua([...pemasukan, ...pengeluaran]);
+          setTrxMentah(trx);
         }
         setMemuat(false);
       })();
@@ -210,6 +215,7 @@ export default function LaporanScreen() {
               ListEmptyComponent={
                 gagal ? undefined : <Text style={styles.kosong}>Belum ada catatan di periode ini.</Text>
               }
+              ListFooterComponent={gagal ? undefined : <PerkiraanVsKenyataan transaksi={trxMentah} />}
               renderItem={({ item }) => {
                 const masuk = item.jenis === 'masuk';
                 return (

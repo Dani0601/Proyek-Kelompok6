@@ -360,6 +360,12 @@ Kontrak ini milik tim. Bila Dimas atau Alfiah perlu mengubah tipe, kabari Istaft
 
 **Bukti:** tangkapan layar tiap state, GIF demo, catatan uji keterbacaan, tabel field check.
 
+<img src= "Bukti halaman Dashboard.png" width="25%">
+<img src="Bukti halaman Laporan.png"  width="25%">
+
+<img src= "bukti-perkiraan-dashboard.gif" width="25%">
+<img src= "bukti-perkiraan-laporan.gif" width="25%">
+
 ---
 
 ## 6. Dokumentasi Bukti

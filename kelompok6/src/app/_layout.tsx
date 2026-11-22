@@ -11,7 +11,7 @@ import { ProdukProvider, useProduk } from '@/context/produk-context';
 import { useFonts } from 'expo-font';
 import { Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
-
+import { jalankanUji } from '@/lib/ai/forecast-uji';
 /**
  * Provider data dipasang sebelum login dan langsung mengambil data. Setelah RLS diketatkan
  * (tahap 2b), pengambilan itu ditolak untuk pengguna yang belum login. Komponen ini memuat
@@ -56,6 +56,10 @@ function Navigator() {
 }
 
 export default function RootLayout() {
+    // SEMENTARA: hapus setelah uji model selesai
+  useEffect(() => {
+    jalankanUji();
+  }, []);
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
     Poppins_700Bold,

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
@@ -194,7 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // memantulkan hasilnya ke exp://... (Expo Go). Alamat proxy harus ada di Redirect URLs Supabase.
     // Aplikasi hasil build / web memakai alamat langsung seperti biasa.
     const hostUri = Constants.expoConfig?.hostUri; // mis. 192.168.1.5:8081 (hanya ada saat development)
-    const pakaiProxy = __DEV__ && !!hostUri && Platform.OS !== 'web';
+        // Proxy Expo hanya untuk Expo Go. Development build dan aplikasi hasil build memakai
+    // kelompok6://auth/callback (alamat itu sudah terdaftar di Redirect URLs Supabase).
+    const diExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+    const pakaiProxy = diExpoGo && !!hostUri && Platform.OS !== 'web';
 
     const returnUrl = pakaiProxy
       ? `exp://${hostUri}/--/auth/callback`

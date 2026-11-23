@@ -1,0 +1,307 @@
+diff --git a/kelompok6/src/app/(owner)/manajemen-kasir.tsx b/kelompok6/src/app/(owner)/manajemen-kasir.tsx
+index 1780650..c77c9d5 100644
+--- a/kelompok6/src/app/(owner)/manajemen-kasir.tsx
++++ b/kelompok6/src/app/(owner)/manajemen-kasir.tsx
+@@ -20,6 +20,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
+ import ProductList from '@/components/organisms/ProductList';
+ import { StickyMilkColors } from '@/constants/design-tokens';
+ import { useAuth } from '@/context/auth-context';
++import { sudahSegar } from '@/lib/segar';
+ import { showAlert } from '@/utils/show-alert';
+ import { useKasir, type Kasir } from '../../context/kasir-context';
+ 
+@@ -54,7 +55,7 @@ export default function ManajemenKasirScreen() {
+   // layar tab tetap hidup di belakang, jadi muat ulang setiap kali tab dibuka
+   useFocusEffect(
+     useCallback(() => {
+-      refreshKasir();
++      if (!sudahSegar('kasir')) refreshKasir();
+     }, [refreshKasir])
+   );
+ 
+diff --git a/kelompok6/src/app/(owner)/produk.tsx b/kelompok6/src/app/(owner)/produk.tsx
+index 3bb18cb..86cf800 100644
+--- a/kelompok6/src/app/(owner)/produk.tsx
++++ b/kelompok6/src/app/(owner)/produk.tsx
+@@ -23,6 +23,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
+ import { DesignTokens } from '@/constants/design-tokens';
+ import { priceLabel, useProduk, type Kategori, type Produk } from '@/context/produk-context';
+ import { supabase } from '@/lib/supabase';
++import { sudahSegar } from '@/lib/segar';
+ 
+ const COLORS = {
+   background: DesignTokens.color.cream,
+@@ -74,7 +75,8 @@ export default function ProdukScreen() {
+ 
+   useFocusEffect(
+     useCallback(() => {
+-      refresh();
++      // data baru diambil kurang dari 30 detik lalu (mis. saat login): tidak perlu diambil lagi
++      if (!sudahSegar('produk')) refresh();
+     }, [refresh])
+   );
+ 
+diff --git a/kelompok6/src/app/_layout.tsx b/kelompok6/src/app/_layout.tsx
+index 267e8ca..43368d9 100644
+--- a/kelompok6/src/app/_layout.tsx
++++ b/kelompok6/src/app/_layout.tsx
+@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
+ import { StatusBar } from 'expo-status-bar';
+ 
+ import { AuthProvider, useAuth } from '@/context/auth-context';
++import { tandaiBasiSemua } from '@/lib/segar';
+ import { OrderProvider, useOrders } from '@/context/order-context';
+ import { BahanProvider, useBahan } from '@/context/bahan-context';
+ import { ProdukProvider, useProduk } from '@/context/produk-context';
+@@ -25,6 +26,7 @@ function SinkronData() {
+ 
+   useEffect(() => {
+     if (!email) return;
++    tandaiBasiSemua(); // berganti akun: jangan pakai data akun sebelumnya
+     segarkanPesanan();
+     refreshBahan();
+     segarkanProduk();
+diff --git a/kelompok6/src/context/bahan-context.tsx b/kelompok6/src/context/bahan-context.tsx
+index 863ce58..6515b95 100644
+--- a/kelompok6/src/context/bahan-context.tsx
++++ b/kelompok6/src/context/bahan-context.tsx
+@@ -1,5 +1,6 @@
+ import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+ import { supabase } from '@/lib/supabase';
++import { tandaiBasi } from '@/lib/segar';
+ 
+ export interface Bahan {
+   id: string;
+@@ -178,6 +179,7 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
+       p_catatan: catatan.trim() || null,
+     });
+     if (error) throw new Error(pesanError(error, 'Gagal mencatat stok masuk.'));
++    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
+     await refreshBahan();
+   };
+ 
+@@ -192,12 +194,14 @@ export function BahanProvider({ children }: { children: React.ReactNode }) {
+       p_catatan: (data.catatan ?? '').trim() || null,
+     });
+     if (error) throw new Error(pesanError(error, 'Gagal mengubah catatan pengadaan.'));
++    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
+     await refreshBahan();
+   };
+ 
+   const hapusStokMasuk = async (id: string) => {
+     const { error } = await supabase.rpc('hapus_stok_masuk', { p_id: id });
+     if (error) throw new Error(pesanError(error, 'Gagal menghapus catatan pengadaan.'));
++    tandaiBasi('stok_masuk'); // laporan harus mengambil ulang
+     await refreshBahan();
+   };
+ 
+diff --git a/kelompok6/src/context/kasir-context.tsx b/kelompok6/src/context/kasir-context.tsx
+index 104b689..b8625dc 100644
+--- a/kelompok6/src/context/kasir-context.tsx
++++ b/kelompok6/src/context/kasir-context.tsx
+@@ -1,5 +1,6 @@
+ import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+ import { supabase } from '@/lib/supabase';
++import { tandaiSegar } from '@/lib/segar';
+ import type { Role } from '@/context/auth-context';
+ 
+ /** Satu akun di tabel `pengguna` (kasir maupun owner). */
+@@ -74,6 +75,7 @@ export function KasirProvider({ children }: { children: React.ReactNode }) {
+       } else {
+         setKasirList(((data ?? []) as PenggunaRow[]).map(keKasir));
+         setGalat(null);
++        tandaiSegar('kasir');
+       }
+     } catch (e) {
+       setGalat(pesanError(e as Error, 'Tidak dapat terhubung ke Supabase.'));
+diff --git a/kelompok6/src/context/produk-context.tsx b/kelompok6/src/context/produk-context.tsx
+index 70cc5d7..09f2eeb 100644
+--- a/kelompok6/src/context/produk-context.tsx
++++ b/kelompok6/src/context/produk-context.tsx
+@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
+ import type { ImageSourcePropType } from 'react-native';
+ import { File } from 'expo-file-system';
+ import { supabase } from '@/lib/supabase';
++import { tandaiSegar } from '@/lib/segar';
+ import { DesignTokens } from '@/constants/design-tokens';
+ 
+ export type Kategori = 'Minuman' | 'Topping';
+@@ -84,7 +85,10 @@ export function ProdukProvider({ children }: { children: React.ReactNode }) {
+   const refresh = useCallback(async () => {
+     setMemuat(true);
+     const { data, error } = await supabase.from('produk').select('*').order('created_at', { ascending: true });
+-    if (!error && data) setProdukList((data as ProdukRow[]).map(keProduk));
++    if (!error && data) {
++      setProdukList((data as ProdukRow[]).map(keProduk));
++      tandaiSegar('produk');
++    }
+     setMemuat(false);
+   }, []);
+ 
+diff --git a/kelompok6/src/lib/dashboard-data.ts b/kelompok6/src/lib/dashboard-data.ts
+index 48a7a7b..33a0a42 100644
+--- a/kelompok6/src/lib/dashboard-data.ts
++++ b/kelompok6/src/lib/dashboard-data.ts
+@@ -107,7 +107,7 @@ export function useTransaksiDashboard() {
+ 
+   const segarkan = async () => {
+     setMenyegarkan(true);
+-    terapkan(await ambilTransaksi());
++    terapkan(await ambilTransaksi({ paksa: true }));
+     setMenyegarkan(false);
+   };
+ 
+diff --git a/kelompok6/src/lib/segar.ts b/kelompok6/src/lib/segar.ts
+new file mode 100644
+index 0000000..dde1eba
+--- /dev/null
++++ b/kelompok6/src/lib/segar.ts
+@@ -0,0 +1,35 @@
++/**
++ * Pencatat "kapan data terakhir diambil dari Supabase".
++ *
++ * Banyak layar memuat ulang data setiap kali dibuka (useFocusEffect). Pindah-pindah tab
++ * berulang kali jadi menembakkan permintaan yang sama berulang kali, dan tiap permintaan
++ * menjadi satu baris log di Supabase. Dengan pencatat ini, data yang baru diambil kurang
++ * dari JEDA_SEGAR_MS lalu tidak diambil lagi.
++ *
++ * Aman karena: (1) tambah/ubah/hapus selalu memuat ulang sendiri, (2) pesanan sinkron lewat
++ * realtime, (3) tarik-untuk-muat-ulang tetap memaksa pengambilan baru.
++ */
++export const JEDA_SEGAR_MS = 30_000;
++
++const waktuAmbil = new Map<string, number>();
++
++/** Tandai data `kunci` baru saja berhasil diambil. */
++export const tandaiSegar = (kunci: string) => {
++  waktuAmbil.set(kunci, Date.now());
++};
++
++/** Tandai data `kunci` basi (mis. sesudah ada perubahan), supaya diambil ulang di kesempatan berikut. */
++export const tandaiBasi = (kunci: string) => {
++  waktuAmbil.delete(kunci);
++};
++
++/** Tandai semua data basi (mis. saat berganti akun). */
++export const tandaiBasiSemua = () => {
++  waktuAmbil.clear();
++};
++
++/** True bila data `kunci` masih segar (diambil kurang dari `jeda` ms lalu). */
++export const sudahSegar = (kunci: string, jeda: number = JEDA_SEGAR_MS) => {
++  const t = waktuAmbil.get(kunci);
++  return t !== undefined && Date.now() - t < jeda;
++};
+diff --git a/kelompok6/src/lib/transaksi-api.ts b/kelompok6/src/lib/transaksi-api.ts
+index 1b6a90e..1438bf0 100644
+--- a/kelompok6/src/lib/transaksi-api.ts
++++ b/kelompok6/src/lib/transaksi-api.ts
+@@ -1,4 +1,5 @@
+ import { supabase } from '@/lib/supabase';
++import { sudahSegar, tandaiBasi, tandaiSegar } from '@/lib/segar';
+ import { KASIR_AKTIF, type DetailTransaksi, type ItemDetail } from '@/utils/detail-transaksi';
+ 
+ type TransaksiRow = {
+@@ -34,6 +35,16 @@ export type Pengeluaran = {
+ 
+ const pad = (n: number) => String(n).padStart(2, '0');
+ 
++// Hasil terakhir disimpan di memori dan dipakai bersama oleh dashboard, laporan, dan riwayat,
++// sehingga berpindah layar tidak mengambil data yang sama berulang kali (lihat segar.ts).
++// `dimuat*` mencegah dua layar yang terbuka bersamaan mengirim dua permintaan yang sama.
++let cacheTransaksi: DetailTransaksi[] | null = null;
++let dimuatTransaksi: Promise<DetailTransaksi[] | null> | null = null;
++let cacheStok: Pengeluaran[] | null = null;
++let dimuatStok: Promise<Pengeluaran[] | null> | null = null;
++
++type Opsi = { paksa?: boolean };
++
+ /** Simpan nota ke tabel transaksi. Aman dipanggil dua kali (upsert). */
+ export async function simpanTransaksi(d: DetailTransaksi): Promise<boolean> {
+   const t = new Date(d.waktu);
+@@ -55,11 +66,26 @@ export async function simpanTransaksi(d: DetailTransaksi): Promise<boolean> {
+     console.log('GAGAL SIMPAN TRANSAKSI:', error.message);
+     return false;
+   }
++  tandaiBasi('transaksi'); // ada nota baru: layar berikut harus mengambil ulang
+   return true;
+ }
+ 
+-/** Ambil semua transaksi, terbaru dulu. Mengembalikan null kalau gagal. */
+-export async function ambilTransaksi(): Promise<DetailTransaksi[] | null> {
++/**
++ * Ambil semua transaksi, terbaru dulu. Mengembalikan null kalau gagal.
++ * Memakai hasil terakhir bila masih segar; `{ paksa: true }` (tarik-untuk-muat-ulang) selalu mengambil baru.
++ */
++export function ambilTransaksi(opsi: Opsi = {}): Promise<DetailTransaksi[] | null> {
++  if (!opsi.paksa && cacheTransaksi && sudahSegar('transaksi')) return Promise.resolve(cacheTransaksi);
++  if (dimuatTransaksi && !opsi.paksa) return dimuatTransaksi;
++
++  const proses = muatTransaksi().finally(() => {
++    if (dimuatTransaksi === proses) dimuatTransaksi = null;
++  });
++  dimuatTransaksi = proses;
++  return proses;
++}
++
++async function muatTransaksi(): Promise<DetailTransaksi[] | null> {
+   const { data, error } = await supabase
+     .from('transaksi')
+     .select('*')
+@@ -70,7 +96,7 @@ export async function ambilTransaksi(): Promise<DetailTransaksi[] | null> {
+     return null;
+   }
+ 
+-  return (data as TransaksiRow[]).map((r) => ({
++  const hasil: DetailTransaksi[] = (data as TransaksiRow[]).map((r) => ({
+     id: r.antrean_id ?? r.id,
+     waktu: r.created_at,
+     kasir: KASIR_AKTIF,
+@@ -82,10 +108,27 @@ export async function ambilTransaksi(): Promise<DetailTransaksi[] | null> {
+     kembalian: Number(r.kembali),
+     status: 'Selesai',
+   }));
++  cacheTransaksi = hasil;
++  tandaiSegar('transaksi');
++  return hasil;
++}
++
++/**
++ * Ambil pengadaan stok (pengeluaran) beserta nama bahan. Mengembalikan null kalau gagal.
++ * Aturan cache sama seperti ambilTransaksi; bahan-context menandainya basi saat stok masuk diubah.
++ */
++export function ambilStokMasuk(opsi: Opsi = {}): Promise<Pengeluaran[] | null> {
++  if (!opsi.paksa && cacheStok && sudahSegar('stok_masuk')) return Promise.resolve(cacheStok);
++  if (dimuatStok && !opsi.paksa) return dimuatStok;
++
++  const proses = muatStokMasuk().finally(() => {
++    if (dimuatStok === proses) dimuatStok = null;
++  });
++  dimuatStok = proses;
++  return proses;
+ }
+ 
+-/** Ambil pengadaan stok (pengeluaran) beserta nama bahan. Mengembalikan null kalau gagal. */
+-export async function ambilStokMasuk(): Promise<Pengeluaran[] | null> {
++async function muatStokMasuk(): Promise<Pengeluaran[] | null> {
+   const { data, error } = await supabase
+     .from('stok_masuk')
+     .select('id, jumlah, harga, catatan, tanggal, bahan(nama, satuan)')
+@@ -96,7 +139,7 @@ export async function ambilStokMasuk(): Promise<Pengeluaran[] | null> {
+     return null;
+   }
+ 
+-  return (data as unknown as StokMasukRow[]).map((r) => {
++  const hasil: Pengeluaran[] = (data as unknown as StokMasukRow[]).map((r) => {
+     const b = Array.isArray(r.bahan) ? r.bahan[0] : r.bahan;
+     return {
+       id: r.id,
+@@ -108,4 +151,7 @@ export async function ambilStokMasuk(): Promise<Pengeluaran[] | null> {
+       tanggal: r.tanggal,
+     };
+   });
++  cacheStok = hasil;
++  tandaiSegar('stok_masuk');
++  return hasil;
+ }
+\ No newline at end of file

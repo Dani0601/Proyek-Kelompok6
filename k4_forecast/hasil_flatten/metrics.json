@@ -1,0 +1,25 @@
+{
+  "model": {
+    "MAE": 169.194,
+    "RMSE": 198.896
+  },
+  "baseline_ma7": {
+    "MAE": 166.828,
+    "RMSE": 219.692
+  },
+  "baseline_konstan": {
+    "MAE": 167.389
+  },
+  "percobaan_seed": 5,
+  "arsitektur": "Conv1D(16)-Conv1D(16)-Flatten-Dense(12)-Dense(1)",
+  "n_test": 34,
+  "data_source": "data_simulasi.csv",
+  "keterangan": "SINTETIS (mitra belum punya pembukuan); bukan akurasi nyata",
+  "satuan": "ribu_rupiah",
+  "preprocess": {
+    "mu": 740.9757690429688,
+    "sigma": 219.27574157714844
+  },
+  "window": 14,
+  "tanggal_akhir_latih": "2026-10-17"
+}

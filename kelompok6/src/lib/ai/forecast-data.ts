@@ -18,7 +18,7 @@ import type { DetailTransaksi } from '@/utils/detail-transaksi';
  * bukan dari transaksi. Tidak ada yang ditulis ke basis data. Nilai bawaan: false.
  * Diketik `boolean` (bukan literal `false`) agar TypeScript tidak menganggap cabang true tak terjangkau.
  */
-export const MODE_DATA_CONTOH: boolean = false;
+export const MODE_DATA_CONTOH: boolean = true;
 
 /** Panjang window yang dimakan model (harus sama dengan metrik.window = 14). */
 export const WINDOW_MODEL = 14;

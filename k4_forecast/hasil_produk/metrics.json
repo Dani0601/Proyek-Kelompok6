@@ -1,0 +1,84 @@
+{
+  "model": {
+    "MAE": 1.9299,
+    "RMSE": 2.5612
+  },
+  "baseline_ma7": {
+    "MAE": 1.9763,
+    "RMSE": 2.5823
+  },
+  "baseline_konstan": {
+    "MAE": 2.5587
+  },
+  "per_menu": {
+    "sticky_milk_coklat_l": {
+      "model_MAE": 3.106,
+      "ma7_MAE": 2.857
+    },
+    "sticky_milk_coklat_s": {
+      "model_MAE": 1.737,
+      "ma7_MAE": 2.025
+    },
+    "sticky_milk_taro_l": {
+      "model_MAE": 1.942,
+      "ma7_MAE": 2.139
+    },
+    "sticky_milk_taro_s": {
+      "model_MAE": 2.205,
+      "ma7_MAE": 2.345
+    },
+    "sticky_milk_keju_l": {
+      "model_MAE": 1.825,
+      "ma7_MAE": 1.933
+    },
+    "sticky_milk_keju_s": {
+      "model_MAE": 1.42,
+      "ma7_MAE": 1.563
+    },
+    "sticky_milk_foto_l": {
+      "model_MAE": 0.917,
+      "ma7_MAE": 0.945
+    },
+    "sticky_milk_foto_s": {
+      "model_MAE": 1.548,
+      "ma7_MAE": 1.639
+    },
+    "smoothies_durian": {
+      "model_MAE": 1.957,
+      "ma7_MAE": 1.819
+    },
+    "smoothies_mangga": {
+      "model_MAE": 2.116,
+      "ma7_MAE": 2.147
+    },
+    "topping_oreo": {
+      "model_MAE": 2.457,
+      "ma7_MAE": 2.328
+    }
+  },
+  "n_test": 374,
+  "data_source": "data_simulasi_produk.csv",
+  "keterangan": "SINTETIS (mitra belum punya pembukuan); bukan akurasi nyata",
+  "satuan": "porsi",
+  "preprocess": {
+    "mu": 4.425252437591553,
+    "sigma": 2.980633020401001
+  },
+  "window": 14,
+  "percobaan_seed": 3,
+  "arsitektur": "Conv1D(16)-Conv1D(16)-GlobalAveragePooling-Dense(12)-Dense(1)",
+  "tanggal_akhir_latih": "2026-10-17",
+  "menu": [
+    "smoothies_durian",
+    "smoothies_mangga",
+    "sticky_milk_coklat_l",
+    "sticky_milk_coklat_s",
+    "sticky_milk_foto_l",
+    "sticky_milk_foto_s",
+    "sticky_milk_keju_l",
+    "sticky_milk_keju_s",
+    "sticky_milk_taro_l",
+    "sticky_milk_taro_s",
+    "topping_oreo"
+  ]
+}

@@ -239,9 +239,6 @@ Kontrak ini milik tim. Bila Dimas atau Alfiah perlu mengubah tipe, kabari Istaft
 - [ ] Data sintetis **tidak** ada di tabel `transaksi` maupun repo aplikasi
 - [ ] Riwayat percobaan (6.2) ditulis lengkap
 
-**Bukti:** tangkapan terminal pelatihan, isi `metrics.json`, 10 baris pertama `data_simulasi_produk.csv`.
-
----
 
 ### 5.2 Dimas — Development Build, Runtime TFLite, Preprocessing, dan Inference
 
@@ -275,9 +272,7 @@ Kontrak ini milik tim. Bila Dimas atau Alfiah perlu mengubah tipe, kabari Istaft
 - [ ] Login Google jalan di Expo Go **dan** development build
 - [ ] Prediksi wajar dan konsisten dengan hasil Python
 
-**Bukti:** tangkapan layar build berhasil, log Metro, hasil `prediksiModel` untuk satu window uji beserta pembandingnya.
 
----
 
 ### 5.3 Alfiah — Data per Varian, Fallback, Tangga Keputusan, Omzet, dan Evaluasi
 
@@ -358,27 +353,23 @@ Kontrak ini milik tim. Bila Dimas atau Alfiah perlu mengubah tipe, kabari Istaft
 - [ ] Uji keterbacaan dengan 1 orang di luar tim
 - [ ] Field check tercatat (atau keterbatasannya ditulis)
 
+
+## 6. Dokumentasi Bukti
+
 **Bukti:** tangkapan layar tiap state, GIF demo, catatan uji keterbacaan, tabel field check.
+
 
 <img src= "Bukti halaman Dashboard.png" width="25%">
 <img src="Bukti halaman Laporan.png"  width="25%">
 
+### GIF Dahboard & Laporan tanpa data sintetis
 <img src= "bukti-perkiraan-dashboard.gif" width="25%">
 <img src= "bukti-perkiraan-laporan.gif" width="25%">
 
----
+### GIF Dashboard & Laporan dengan data sintetis
+<img src= "bukti-perkiraan-dashboard-sintetis.gif" width="25%">
+<img src= "bukti-perkiraan-laporan-sintetis.gif" width="25%">
 
-## 6. Dokumentasi Bukti
-
-| Bukti | Penanggung jawab | Berkas |
-|---|---|---|
-| `data_simulasi_produk.csv` (cuplikan), `metrics.json`, terminal pelatihan | Dani | `[isi]` |
-| Spike development build, log Metro | Dimas | `[isi]` |
-| Uji tiga kondisi data dan fallback | Alfiah | `[isi]` |
-| Tangkapan layar Dashboard dan Laporan | Istafty | `[isi]` |
-| GIF demo Dashboard (development build) | Istafty | `bukti-perkiraan-dashboard.gif` |
-| GIF demo Laporan | Istafty | `bukti-perkiraan-laporan.gif` |
-| Video demo | Kelompok | `[isi tautan]` |
 
 ### 6.1 Metrik model akhir (dari `metrics.json`)
 
@@ -406,11 +397,6 @@ Hasil per varian (MAE model vs MA7): model lebih baik pada **8 dari 11** varian 
 
 Catatan kejujuran: empat konfigurasi dicoba, dan yang dipakai adalah yang mengikuti desain modul dan mengalahkan MA7. Pemilihan konfigurasi dengan demikian dipengaruhi hasil uji, sehingga angka akhir cenderung sedikit optimistis. Data tidak diubah selama percobaan (data yang sama, seed tetap).
 
-### 6.3 Field check
-
-| Tanggal | Perkiraan | Kenyataan | Selisih | Keterangan |
-|---|---|---|---|---|
-| `[isi]` | `[isi]` | `[isi]` | `[isi]` | `[isi]` |
 
 ## 7. Catatan dan Batasan (ditulis apa adanya)
 

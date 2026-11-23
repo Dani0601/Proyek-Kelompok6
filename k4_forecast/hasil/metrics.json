@@ -1,0 +1,24 @@
+{
+  "model": {
+    "MAE": 168.92,
+    "RMSE": 225.033
+  },
+  "baseline_ma7": {
+    "MAE": 166.828,
+    "RMSE": 219.692
+  },
+  "baseline_konstan": {
+    "MAE": 167.389
+  },
+  "percobaan_seed": 5,
+  "n_test": 34,
+  "data_source": "data_simulasi.csv",
+  "keterangan": "SINTETIS (mitra belum punya pembukuan); bukan akurasi nyata",
+  "satuan": "ribu_rupiah",
+  "preprocess": {
+    "mu": 740.9757690429688,
+    "sigma": 219.27574157714844
+  },
+  "window": 14,
+  "tanggal_akhir_latih": "2026-10-17"
+}

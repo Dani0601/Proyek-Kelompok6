@@ -214,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : data.url;
 
     const hasil = await WebBrowser.openAuthSessionAsync(urlBuka, returnUrl);
+    
     if (hasil.type === 'success' && hasil.url) await masukDariUrl(hasil.url);
     // type lain (dismiss/cancel): bila alamat balik datang lewat Linking, useEffect di atas
     // yang memprosesnya; bila tidak, pengguna tetap di layar login.

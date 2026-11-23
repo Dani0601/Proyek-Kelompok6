@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { StickyMilkColors } from '@/constants/design-tokens';
 import { formatRupiah } from '@/context/produk-context';
@@ -82,6 +82,8 @@ export default function PerkiraanPenjualan({ transaksi, memuat = false }: Props)
   const [galat, setGalat] = useState(false);
   const [diperbarui, setDiperbarui] = useState<Date | null>(null);
   const [lembarBuka, setLembarBuka] = useState(false);
+  /** Menu yang dipilih di kartu "Siapkan Besok"; null = semua menu (3 teratas). */
+  const [menuDipilih, setMenuDipilih] = useState<string | null>(null);
 
   useEffect(() => {
     if (memuat) return;
@@ -128,8 +130,17 @@ export default function PerkiraanPenjualan({ transaksi, memuat = false }: Props)
       a.rata7 += p.rata7;
       peta.set(kunci, a);
     }
-    return [...peta.values()].sort((a, b) => b.rata7 - a.rata7).slice(0, 3);
+    return [...peta.values()].sort((a, b) => b.rata7 - a.rata7);
   }, [hasil]);
+
+  // Bila menu yang dipilih tidak ada lagi (mis. data berubah), kembali ke "Semua".
+  const menuAktif = menuDipilih && siapBesok.some((m) => m.nama === menuDipilih) ? menuDipilih : null;
+
+  /** Rincian per varian (mis. S dan L) untuk menu yang dipilih. */
+  const rincianMenu = useMemo(() => {
+    if (!hasil || !menuAktif) return [];
+    return hasil.produk.filter((p) => gabungUkuran(p.nama) === menuAktif);
+  }, [hasil, menuAktif]);
 
   const batang = useMemo(() => {
     if (berantai.length === 0 || berantai[0].sumber === 'kurang-data') return [];
@@ -242,17 +253,46 @@ export default function PerkiraanPenjualan({ transaksi, memuat = false }: Props)
           keadaan
         ) : siapBesok.length > 0 ? (
           <>
-            {siapBesok.map((p, i) => (
-              <View key={p.nama} style={styles.barisProduk}>
-                <View style={styles.rank}>
-                  <Text style={styles.rankTeks}>{i + 1}</Text>
-                </View>
-                <Text style={styles.namaProduk} numberOfLines={1}>
-                  {p.nama}
-                </Text>
-                <Text style={styles.porsi}>± {Math.round(p.porsi)} porsi</Text>
-              </View>
-            ))}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.barisChip}>
+              {[null, ...siapBesok.map((m) => m.nama)].map((nama) => {
+                const aktif = nama === menuAktif;
+                return (
+                  <Pressable
+                    key={nama ?? 'semua'}
+                    onPress={() => setMenuDipilih(nama)}
+                    style={[styles.chip, aktif ? styles.chipAktif : null]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: aktif }}
+                    accessibilityLabel={nama ? `Pilih menu ${nama}` : 'Tampilkan semua menu'}>
+                    <Text style={[styles.chipTeks, aktif ? styles.chipTeksAktif : null]}>{nama ?? 'Semua'}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {menuAktif === null
+              ? siapBesok.slice(0, 3).map((p, i) => (
+                  <View key={p.nama} style={styles.barisProduk}>
+                    <View style={styles.rank}>
+                      <Text style={styles.rankTeks}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.namaProduk} numberOfLines={1}>
+                      {p.nama}
+                    </Text>
+                    <Text style={styles.porsi}>± {Math.round(p.porsi)} porsi</Text>
+                  </View>
+                ))
+              : rincianMenu.map((p) => (
+                  <View key={p.nama} style={styles.barisProduk}>
+                    <Text style={styles.namaProduk} numberOfLines={1}>
+                      {p.nama}
+                    </Text>
+                    <Text style={styles.porsi}>
+                      ± {Math.round(p.porsi)} porsi
+                      <Text style={styles.biasanya}> (biasanya {Math.round(p.rata7)})</Text>
+                    </Text>
+                  </View>
+                ))}
             {sumber ? (
               <View style={styles.barisSumber}>
                 <View style={[styles.titik, { backgroundColor: sumber.warna }]} />
@@ -364,6 +404,18 @@ const styles = StyleSheet.create({
   rankTeks: { fontFamily: FONTS.bodyBold, fontSize: 12, color: COLORS.brown },
   namaProduk: { flex: 1, fontFamily: FONTS.headingSemi, fontSize: 14, color: COLORS.textDark },
   porsi: { fontFamily: FONTS.bodyBold, fontSize: 13, color: COLORS.textMuted },
+  biasanya: { fontFamily: FONTS.body, fontSize: 12, color: COLORS.textMuted },
+
+  barisChip: { gap: 8, paddingBottom: 4 },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.sand,
+  },
+  chipAktif: { backgroundColor: COLORS.brown },
+  chipTeks: { fontFamily: FONTS.bodyBold, fontSize: 12, color: COLORS.brown },
+  chipTeksAktif: { color: '#FFFFFF' },
 
   latar: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   lembar: {
